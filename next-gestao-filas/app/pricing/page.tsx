@@ -1,62 +1,89 @@
-import Link from 'next/link';
-import { Check } from 'lucide-react';
+import { Check, MessageCircle } from 'lucide-react';
 
 const plans = [
   {
     name: "Mensal",
     price: "5.000 Kz",
     period: "/mês",
-    description: "Ideal para lojas que estão começando a digitalizar sua fila.",
-    features: ["Senhas Digitais Ilimitadas", "Dashboard em Tempo Real", "Suporte via Email"]
+    features: ["Senhas Ilimitadas", "Dashboard Real-time", "Suporte Email"],
+    subject: "Plano Mensal - NEXT"
   },
   {
     name: "Anual",
     price: "50.000 Kz",
     period: "/ano",
-    description: "O melhor custo-benefício para estabelecimentos consolidados.",
-    features: ["Tudo do Mensal", "Desconto de 2 meses", "Prioridade no Atendimento", "Relatórios Mensais"],
-    highlight: true
+    features: ["Tudo do Mensal", "Bónus: 2 meses grátis", "Prioridade total", "Relatórios Mensais"],
+    highlight: true,
+    subject: "Plano Anual - NEXT"
   }
 ];
 
 export default function PricingPage() {
+  const whatsappNumber = "244956821719";
+
   return (
-    <div className="min-h-screen bg-brand-ghost py-20 px-6">
-      <div className="max-w-4xl mx-auto text-center mb-16">
-        <h2 className="text-4xl font-bold text-next-dark mb-4">Planos Simples e Transparentes</h2>
-        <p className="text-brand-muted text-lg">Escolha o plano que melhor se adapta ao volume do seu negócio.</p>
+    <div className="min-h-screen bg-gray-100 py-16 px-6 font-sans antialiased">
+      {/* Header Minimalista e Direto */}
+      <div className="max-w-3xl mx-auto text-center mb-12">
+        <h2 className="text-4xl font-extrabold tracking-tight text-slate-900">
+          Planos <span className="text-[#2b5de0]">Simples.</span>
+        </h2>
+        <p className="text-slate-500 mt-2 font-medium">Escolha a escala certa para o seu negócio.</p>
       </div>
 
-      <div className="max-w-5xl mx-auto grid md:grid-cols-2 gap-8">
+      <div className="max-w-4xl mx-auto grid md:grid-cols-2 gap-6">
         {plans.map((plan) => (
-          <div key={plan.name} className={`card-premium relative flex flex-col ${plan.highlight ? 'border-next-blue ring-1 ring-next-blue' : ''}`}>
-            {plan.highlight && (
-              <span className="absolute -top-4 left-1/2 -translate-x-1/2 bg-next-blue text-white px-4 py-1 rounded-full text-xs font-bold uppercase">
-                Mais Popular
+          <div 
+            key={plan.name} 
+            className={`flex flex-col p-8 rounded-2xl border transition-all duration-300 transform hover:-translate-y-2 hover:shadow-2xl ${
+              plan.highlight 
+              ? 'bg-[#2b5de0] border-[#2b5de0] text-white shadow-xl shadow-blue-200 hover:bg-[#2450c9]' 
+              : 'bg-white border-slate-100 text-slate-900 shadow-sm hover:border-[#2b5de0]/30'
+            }`}
+          >
+            <div className="mb-6">
+              <span className={`text-xs font-bold uppercase tracking-widest ${plan.highlight ? 'text-blue-200' : 'text-blue-600'}`}>
+                {plan.name}
               </span>
-            )}
-            <h3 className="text-2xl font-bold text-next-dark">{plan.name}</h3>
-            <div className="my-6">
-              <span className="text-4xl font-extrabold text-next-dark">{plan.price}</span>
-              <span className="text-brand-muted">{plan.period}</span>
+              <div className="mt-2 flex items-baseline gap-1">
+                <span className="text-3xl font-black">{plan.price}</span>
+                <span className={`text-xs ${plan.highlight ? 'text-blue-200' : 'text-slate-400'}`}>
+                  {plan.period}
+                </span>
+              </div>
             </div>
-            <p className="text-brand-muted mb-8 text-sm leading-relaxed">{plan.description}</p>
-            
-            <ul className="space-y-4 mb-10 flex-1">
+
+            <ul className="space-y-3 mb-8 flex-1">
               {plan.features.map((feature) => (
-                <li key={feature} className="flex items-center gap-3 text-sm text-brand-text">
-                  <Check size={18} className="text-next-blue" />
+                <li key={feature} className="flex items-center gap-3 text-sm font-medium">
+                  <Check size={16} className={plan.highlight ? 'text-blue-200' : 'text-[#2b5de0]'} />
                   {feature}
                 </li>
               ))}
             </ul>
 
-            <Link href="/cadastro" className={`btn-premium w-full ${!plan.highlight ? 'bg-slate-200 text-next-dark hover:bg-slate-300' : ''}`}>
-              Assinar agora
-            </Link>
+            <a 
+              href={`https://wa.me/${whatsappNumber}?text=${encodeURIComponent(`Olá! Tenho interesse no ${plan.subject}. Podem ajudar-me?`)}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className={`flex items-center justify-center gap-2 py-3.5 rounded-xl font-bold text-xs uppercase tracking-wider transition-all active:scale-95 ${
+                plan.highlight 
+                ? 'bg-white text-[#2b5de0] hover:bg-blue-50' 
+                : 'bg-slate-900 text-white hover:bg-slate-800'
+              }`}
+            >
+              <MessageCircle size={16} />
+              Assinar Agora
+            </a>
           </div>
         ))}
       </div>
+
+      <footer className="text-center mt-12">
+        <p className="text-slate-400 text-[10px] uppercase tracking-[0.2em] font-bold">
+          &copy; 2026 NEXT Gestão de Filas
+        </p>
+      </footer>
     </div>
   );
 }

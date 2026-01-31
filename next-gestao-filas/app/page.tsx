@@ -1,71 +1,129 @@
+"use client";
+
 import Link from 'next/link';
-import { Rocket, ShieldCheck, Clock, ArrowRight } from 'lucide-react';
+import { Rocket, ShieldCheck, Clock, MessageCircle, BarChart3, Users, Zap } from 'lucide-react';
 
 export default function LandingPage() {
+  const whatsappNumber = "244956821719";
+
   return (
-    <div className="min-h-screen bg-brand-ghost">
-      {/* Navbar Minimalista */}
-      <nav className="flex justify-between items-center px-8 py-6 bg-white border-b border-slate-100">
-        <div className="text-2xl font-bold text-next-dark tracking-tighter">
-          NEXT<span className="text-next-blue">.</span>
+    <div className="min-h-screen bg-white font-sans antialiased overflow-x-hidden">
+      <style jsx global>{`
+        @keyframes marquee {
+          0% { transform: translateX(0); }
+          100% { transform: translateX(-50%); }
+        }
+        .animate-marquee {
+          display: flex;
+          width: max-content;
+          animation: marquee 30s linear infinite;
+        }
+        .animate-marquee:hover {
+          animation-play-state: paused;
+        }
+      `}</style>
+
+      {/* Navbar - Cinza Sutil Sólido */}
+      <nav className="sticky top-0 z-50 flex justify-between items-center px-10 py-5 bg-[#F1F3F5] border-b border-slate-200 shadow-sm">
+        <div className="text-2xl font-black text-slate-900 tracking-tighter italic">
+          NEXT<span className="text-[#2b5de0]">.</span>
         </div>
-        <div className="space-x-8 text-sm font-medium text-brand-text">
-          <Link href="/saber-mais" className="hover:text-next-blue transition-colors">Saber Mais</Link>
-          <Link href="/pricing" className="hover:text-next-blue transition-colors">Pricing</Link>
-          <Link href="/login" className="px-5 py-2 border border-next-dark rounded-next hover:bg-next-dark hover:text-white transition-all">
+        <div className="flex items-center space-x-8 text-[14px] font-bold text-slate-600 tracking-wide uppercase">
+          <Link href="/saber-mais" className="hover:text-[#2b5de0] transition-colors">Saber Mais</Link>
+          <Link href="/pricing" className="hover:text-[#2b5de0] transition-colors">Pricing</Link>
+          <Link href="/login" className="px-6 py-2 bg-slate-900 text-white rounded-xl hover:bg-slate-800 transition-all shadow-md active:scale-95">
             Login
           </Link>
         </div>
       </nav>
 
       {/* Hero Section */}
-      <section className="max-w-6xl mx-auto pt-24 pb-16 px-6 text-center">
-        <h1 className="text-6xl font-extrabold text-next-dark mb-6 tracking-tight">
+      <section className="max-w-6xl mx-auto pt-28 pb-20 px-6 text-center">
+        <h1 className="text-5xl md:text-7xl font-black text-slate-900 mb-8 tracking-tighter leading-tight">
           O tempo é o ativo mais <br />
-          <span className="text-next-blue">precioso da sua loja.</span>
+          <span className="text-[#2b5de0]">precioso da sua loja.</span>
         </h1>
-        <p className="text-xl text-brand-muted max-w-2xl mx-auto mb-10 leading-relaxed">
+        <p className="text-xl text-slate-500 max-w-2xl mx-auto mb-12 leading-relaxed font-semibold italic border-l-4 border-slate-200 pl-6">
           Transforme a espera em uma experiência de luxo. A NEXT organiza suas filas 
-          com inteligência e eleva o padrão do atendimento.
+          com inteligência e eleva o padrão do atendimento em Angola.
         </p>
+        
+        <a 
+          href={`https://wa.me/${whatsappNumber}?text=Olá! Gostaria de implementar o NEXT no meu negócio.`}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-flex items-center gap-3 px-10 py-5 bg-[#2b5de0] text-white rounded-2xl font-black uppercase tracking-widest text-sm hover:bg-[#1e46b3] transition-all shadow-2xl shadow-blue-200 active:scale-95"
+        >
+          <MessageCircle size={20} />
+          Começar Agora
+        </a>
       </section>
 
-      {/* Features Rápidas */}
-      <section className="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto px-6 py-16">
-        <div className="card-premium">
-          <Clock className="text-next-blue mb-4" size={32} />
-          <h3 className="text-lg font-bold mb-2">Filas Digitais</h3>
-          <p className="text-brand-muted text-sm">Seus clientes solicitam senhas via QR Code sem baixar apps.</p>
-        </div>
-        <div className="card-premium">
-          <ShieldCheck className="text-next-blue mb-4" size={32} />
-          <h3 className="text-lg font-bold mb-2">Gestão Premium</h3>
-          <p className="text-brand-muted text-sm">Dashboard intuitivo para lojistas chamarem e encerrarem senhas.</p>
-        </div>
-        <div className="card-premium">
-          <Rocket className="text-next-blue mb-4" size={32} />
-          <h3 className="text-lg font-bold mb-2">Multitenant</h3>
-          <p className="text-brand-muted text-sm">Segurança total e isolamento de dados para cada estabelecimento.</p>
+      {/* Carrossel Centralizado (Sem efeito fusco) */}
+      <section className="py-24 bg-slate-50 border-y border-slate-200">
+        <div className="max-w-7xl mx-auto overflow-hidden">
+          <div className="animate-marquee flex gap-12">
+            {[1, 2].map((loop) => (
+              <div key={loop} className="flex gap-12">
+                <div className="w-[360px] bg-[#2b5de0] p-12 rounded-[2.5rem] shadow-xl text-white">
+                  <Clock className="text-white mb-6" size={40} />
+                  <h3 className="text-2xl font-black mb-4 tracking-tight uppercase">Filas Digitais</h3>
+                  <p className="text-blue-50 text-sm leading-relaxed font-medium">O seu cliente solicita a senha via QR Code e acompanha tudo pelo telemóvel.</p>
+                </div>
+                <div className="w-[360px] bg-slate-900 p-12 rounded-[2.5rem] shadow-xl text-white">
+                  <ShieldCheck className="text-[#2b5de0] mb-6" size={40} />
+                  <h3 className="text-2xl font-black mb-4 tracking-tight uppercase">Gestão Premium</h3>
+                  <p className="text-slate-400 text-sm leading-relaxed font-medium">Dashboard ultra-rápido para chamar, transferir ou encerrar atendimentos.</p>
+                </div>
+                <div className="w-[360px] bg-[#2b5de0] p-12 rounded-[2.5rem] shadow-xl text-white">
+                  <Rocket className="text-white mb-6" size={40} />
+                  <h3 className="text-2xl font-black mb-4 tracking-tight uppercase">Escalabilidade</h3>
+                  <p className="text-blue-50 text-sm leading-relaxed font-medium">Desde pequenas boutiques a grandes centros, o NEXT adapta-se ao seu fluxo.</p>
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
       </section>
 
-      <nav className="flex items-center justify-between px-8 py-6 max-w-7xl mx-auto">
- 
-  {/* Botões de Ação */}
-  <div className="flex items-center gap-4">
-    {/* O SEU NOVO BOTÃO PESSOAL */}
-  </div>
-</nav>
+      {/* Secção de "Social Proof" e Factos (Para alongar com propósito) */}
+      <section className="py-28 px-6 bg-white max-w-6xl mx-auto">
+        <div className="grid md:grid-cols-3 gap-16 text-center">
+          <div className="flex flex-col items-center">
+            <div className="bg-slate-100 p-5 rounded-full mb-6">
+              <Zap className="text-[#2b5de0]" size={32} />
+            </div>
+            <h4 className="text-4xl font-black text-slate-900 mb-2">60%</h4>
+            <p className="text-slate-500 font-bold uppercase tracking-widest text-xs">Mais Velocidade</p>
+            <p className="mt-4 text-sm text-slate-400">Redução direta no tempo médio de espera no balcão.</p>
+          </div>
+          <div className="flex flex-col items-center">
+            <div className="bg-slate-100 p-5 rounded-full mb-6">
+              <Users className="text-[#2b5de0]" size={32} />
+            </div>
+            <h4 className="text-4xl font-black text-slate-900 mb-2">+50</h4>
+            <p className="text-slate-500 font-bold uppercase tracking-widest text-xs">Clientes Felizes</p>
+            <p className="mt-4 text-sm text-slate-400">Usuários que preferem esperar com conforto digital.</p>
+          </div>
+          <div className="flex flex-col items-center">
+            <div className="bg-slate-100 p-5 rounded-full mb-6">
+              <BarChart3 className="text-[#2b5de0]" size={32} />
+            </div>
+            <h4 className="text-4xl font-black text-slate-900 mb-2">100%</h4>
+            <p className="text-slate-500 font-bold uppercase tracking-widest text-xs">Controlo Total</p>
+            <p className="mt-4 text-sm text-slate-400">Relatórios precisos sobre a performance da sua equipa.</p>
+          </div>
+        </div>
+      </section>
 
-      {/* Footer solicitado */}
-      <footer className="bg-next-dark text-white py-16 px-8 mt-20">
-        <div className="max-w-6xl mx-auto flex flex-col items-center text-center">
-          <div className="text-3xl font-bold mb-4 italic tracking-tighter">NEXT</div>
-          <p className="text-slate-400 max-w-md">
-            Elevando o padrão de atendimento comercial através da tecnologia e sofisticação.
-          </p>
-          <div className="mt-8 pt-8 border-t border-slate-800 w-full text-sm text-slate-500">
-            © 2024 NEXT - Gestão de Filas. Todos os direitos reservados.
+      {/* Footer Compacto */}
+      <footer className="bg-slate-950 text-white py-12 px-8 border-t border-white/5">
+        <div className="max-w-6xl mx-auto flex flex-col md:flex-row justify-between items-center gap-6">
+          <div className="text-2xl font-black italic tracking-tighter">
+            NEXT<span className="text-[#2b5de0]">.</span>
+          </div>
+          <div className="text-slate-600 text-[10px] uppercase tracking-[0.5em] font-black">
+            © 2026 NEXT - Gestão de Filas | D'SOUSA CAPITAL, Angola
           </div>
         </div>
       </footer>

@@ -44,7 +44,7 @@ export default function LoginPage() {
           <Link href="/" className="inline-flex p-3 bg-slate-900 rounded-2xl text-white mb-6 hover:bg-blue-600 transition-colors">
             <Ticket size={28} />
           </Link>
-          <h1 className="text-3xl font-black text-slate-900 tracking-tighter uppercase italic">Acesso Loja</h1>
+          <h1 className="text-3xl font-black text-slate-900 tracking-tighter uppercase">Acesso Loja</h1>
           <p className="text-slate-500 text-sm font-medium mt-2">Entre com suas credenciais de parceiro</p>
         </div>
 
