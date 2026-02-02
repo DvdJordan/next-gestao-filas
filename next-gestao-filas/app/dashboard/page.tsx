@@ -2,10 +2,12 @@
 import React, { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabaseClient';
 import { useRouter } from 'next/navigation';
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
 import { 
   Users, Ticket, LogOut, Megaphone, CheckCircle2, 
   BarChart3, QrCode, Loader2, Settings, X, Save,
-  ChevronRight, Clock, User, Bell
+  ChevronRight, Clock, User, Bell, Trash2, FileText, Download
 } from 'lucide-react';
 
 export default function DashboardPage() {
@@ -20,6 +22,8 @@ export default function DashboardPage() {
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [newStoreName, setNewStoreName] = useState('');
   const [isSaving, setIsSaving] = useState(false);
+  const [isResetting, setIsResetting] = useState(false);
+  const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
   const [copied, setCopied] = useState(false);
 
   const router = useRouter();
@@ -65,13 +69,113 @@ export default function DashboardPage() {
   };
 
   const saveSettings = async () => {
+    if (!newStoreName.trim()) return;
     setIsSaving(true);
-    const { error } = await supabase.from('profiles').update({ store_name: newStoreName }).eq('id', storeId);
+    
+    const { error } = await supabase
+      .from('profiles')
+      .update({ store_name: newStoreName })
+      .eq('id', storeId);
+
     if (!error) {
-      setStoreName(newStoreName);
+      setStoreName(newStoreName); // Atualiza o H1 do Dashboard
       setIsSettingsOpen(false);
+    } else {
+      alert("Erro ao atualizar: " + error.message);
     }
     setIsSaving(false);
+  };
+
+  // --- NOVA FUNCIONALIDADE: RESETAR DIA ---
+  const handleResetDay = async () => {
+    if (!confirm("⚠️ ATENÇÃO: Isso apagará TODOS os tickets de hoje e reiniciará a contagem do zero.\n\nTem certeza que deseja começar um novo dia?")) return;
+    
+    setIsResetting(true);
+    try {
+      // Deleta todos os tickets da loja atual
+      const { error } = await supabase
+        .from('tickets')
+        .delete()
+        .eq('store_id', storeId);
+
+      if (error) throw error;
+
+      // Limpa os estados locais
+      setWaitingTickets([]);
+      setCalledTickets([]);
+      setCurrentTicket(null);
+      setIsSettingsOpen(false);
+      alert("Novo dia iniciado com sucesso! A fila foi limpa.");
+    } catch (error: any) {
+      alert("Erro ao resetar: " + error.message);
+    } finally {
+      setIsResetting(false);
+    }
+  };
+
+  // --- NOVA FUNCIONALIDADE: GERAR PDF ---
+  const generateReport = async (type: 'weekly' | 'monthly') => {
+    setIsGeneratingPdf(true);
+    try {
+      const now = new Date();
+      let startDate = new Date();
+      let title = "";
+
+      if (type === 'weekly') {
+        startDate.setDate(now.getDate() - 7);
+        title = "Relatório Semanal";
+      } else {
+        startDate = new Date(now.getFullYear(), now.getMonth(), 1);
+        title = "Relatório Mensal";
+      }
+
+      // Buscar dados no Supabase filtrando por data
+      const { data: tickets, error } = await supabase
+        .from('tickets')
+        .select('*')
+        .eq('store_id', storeId)
+        .gte('created_at', startDate.toISOString())
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      if (!tickets || tickets.length === 0) {
+        alert("Não há dados para gerar relatório neste período.");
+        setIsGeneratingPdf(false);
+        return;
+      }
+
+      // Gerar PDF
+      const doc = new jsPDF();
+      
+      // Cabeçalho
+      doc.setFontSize(18);
+      doc.text(storeName, 14, 22);
+      doc.setFontSize(12);
+      doc.text(`${title} - Gerado em ${now.toLocaleDateString()}`, 14, 32);
+
+      // Tabela
+      const tableData = tickets.map(t => [
+        t.ticket_number,
+        t.customer_name,
+        t.status === 'called' ? 'Atendido' : 'Na Fila',
+        new Date(t.created_at).toLocaleString('pt-BR')
+      ]);
+
+      autoTable(doc, {
+        head: [['Senha', 'Cliente', 'Status', 'Data/Hora']],
+        body: tableData,
+        startY: 40,
+        theme: 'grid',
+        headStyles: { fillColor: [37, 99, 235] } // Blue color
+      });
+
+      doc.save(`relatorio_${type}_${now.toISOString().split('T')[0]}.pdf`);
+
+    } catch (error: any) {
+      alert("Erro ao gerar PDF: " + error.message);
+    } finally {
+      setIsGeneratingPdf(false);
+    }
   };
 
   const copyCheckinLink = () => {
@@ -408,12 +512,12 @@ export default function DashboardPage() {
         </div>
       </main>
 
-      {/* Settings Modal */}
+      {/* Settings Modal - MODIFIED SECTION */}
       {isSettingsOpen && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-fadeIn">
-          <div className="bg-gradient-to-br from-white to-slate-50 rounded-3xl w-full max-w-md shadow-2xl animate-slideUp">
+          <div className="bg-gradient-to-br from-white to-slate-50 rounded-3xl w-full max-w-md shadow-2xl animate-slideUp max-h-[90vh] overflow-y-auto">
             <div className="p-8">
-              <div className="flex items-center justify-between mb-8">
+              <div className="flex items-center justify-between mb-6">
                 <div>
                   <h2 className="text-2xl font-bold text-slate-800">Configurações</h2>
                   <p className="text-sm text-slate-600 mt-1">Gerencie as configurações da sua loja</p>
@@ -443,9 +547,6 @@ export default function DashboardPage() {
                       <Settings className="text-slate-400" size={20} />
                     </div>
                   </div>
-                  <p className="text-xs text-slate-500 mt-2">
-                    Este nome será exibido no painel e no check-in dos clientes
-                  </p>
                 </div>
 
                 <div>
@@ -487,6 +588,51 @@ export default function DashboardPage() {
                     )}
                   </button>
                 </div>
+
+                {/* --- NOVA SEÇÃO: GESTÃO DE DADOS (Relatórios e Reset) --- */}
+                <div className="pt-6 border-t border-slate-200 mt-6">
+                  <h3 className="text-sm font-bold text-slate-800 mb-4 flex items-center gap-2">
+                    <FileText size={16} className="text-slate-500" />
+                    Relatórios & Gestão
+                  </h3>
+
+                  <div className="grid grid-cols-2 gap-3 mb-6">
+                    <button
+                      onClick={() => generateReport('weekly')}
+                      disabled={isGeneratingPdf}
+                      className="flex flex-col items-center justify-center p-3 rounded-xl border-2 border-slate-100 hover:border-blue-200 hover:bg-blue-50 transition-all text-slate-600 hover:text-blue-700"
+                    >
+                      <FileText size={20} className="mb-2" />
+                      <span className="text-xs font-bold">Relatório Semanal</span>
+                    </button>
+                    <button
+                      onClick={() => generateReport('monthly')}
+                      disabled={isGeneratingPdf}
+                      className="flex flex-col items-center justify-center p-3 rounded-xl border-2 border-slate-100 hover:border-blue-200 hover:bg-blue-50 transition-all text-slate-600 hover:text-blue-700"
+                    >
+                      <Download size={20} className="mb-2" />
+                      <span className="text-xs font-bold">Relatório Mensal</span>
+                    </button>
+                  </div>
+
+                  <div className="bg-red-50 rounded-2xl p-4 border border-red-100">
+                    <h4 className="text-red-800 text-sm font-bold mb-2 flex items-center gap-2">
+                      <Trash2 size={16} />
+                      Zona de Perigo
+                    </h4>
+                    <p className="text-xs text-red-600 mb-3">
+                      Apagar todos os tickets e reiniciar a contagem para um novo dia.
+                    </p>
+                    <button 
+                      onClick={handleResetDay}
+                      disabled={isResetting}
+                      className="w-full py-3 bg-white border border-red-200 text-red-600 rounded-xl text-xs font-bold hover:bg-red-600 hover:text-white transition-all shadow-sm"
+                    >
+                      {isResetting ? "Limpando..." : "Resetar Novo Dia"}
+                    </button>
+                  </div>
+                </div>
+
               </div>
             </div>
           </div>
