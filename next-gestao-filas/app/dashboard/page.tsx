@@ -18,7 +18,6 @@ export default function DashboardPage() {
   const [storeId, setStoreId] = useState('');
   const [loading, setLoading] = useState(true);
   
-  // Estados para Configurações
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [newStoreName, setNewStoreName] = useState('');
   const [isSaving, setIsSaving] = useState(false);
@@ -29,28 +28,52 @@ export default function DashboardPage() {
   const router = useRouter();
 
   useEffect(() => {
+   const { data: { subscription } } = supabase.auth.onAuthStateChange((event: any) => {
+      if (event === 'TOKEN_REFRESH_FAILED' || event === 'SIGNED_OUT') {
+        router.push('/login');
+      }
+    });
+    
     const init = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) { router.push('/login'); return; }
+      // getUser() valida o token no servidor, evitando o erro silencioso
+      const { data: { user }, error: authError } = await supabase.auth.getUser();
+      
+      if (authError || !user) { 
+        router.push('/login'); 
+        return; 
+      }
+      
       setStoreId(user.id);
 
-      const { data: profile } = await supabase.from('profiles').select('store_name').eq('id', user.id).single();
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('store_name')
+        .eq('id', user.id)
+        .single();
+        
       setStoreName(profile?.store_name || 'Minha Loja');
       setNewStoreName(profile?.store_name || 'Minha Loja');
       
       await refreshData(user.id);
       setLoading(false);
     };
+
     init();
 
     const channel = supabase.channel('dashboard-realtime')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'tickets' }, () => {
-        supabase.auth.getUser().then(({data}) => data.user && refreshData(data.user.id));
+        // Busca o usuário atual de forma segura antes de atualizar
+        supabase.auth.getUser().then(({data}) => {
+          if (data.user) refreshData(data.user.id);
+        });
       })
       .subscribe();
 
-    return () => { supabase.removeChannel(channel); };
-  }, []);
+    return () => { 
+      subscription.unsubscribe();
+      supabase.removeChannel(channel); 
+    };
+  }, [router]);
 
   async function refreshData(uid: string) {
     const { data } = await supabase.from('tickets').select('*').eq('store_id', uid).order('created_at', { ascending: true });
@@ -78,7 +101,7 @@ export default function DashboardPage() {
       .eq('id', storeId);
 
     if (!error) {
-      setStoreName(newStoreName); // Atualiza o H1 do Dashboard
+      setStoreName(newStoreName);
       setIsSettingsOpen(false);
     } else {
       alert("Erro ao atualizar: " + error.message);
@@ -86,13 +109,11 @@ export default function DashboardPage() {
     setIsSaving(false);
   };
 
-  // --- NOVA FUNCIONALIDADE: RESETAR DIA ---
   const handleResetDay = async () => {
     if (!confirm("⚠️ ATENÇÃO: Isso apagará TODOS os tickets de hoje e reiniciará a contagem do zero.\n\nTem certeza que deseja começar um novo dia?")) return;
     
     setIsResetting(true);
     try {
-      // Deleta todos os tickets da loja atual
       const { error } = await supabase
         .from('tickets')
         .delete()
@@ -100,7 +121,6 @@ export default function DashboardPage() {
 
       if (error) throw error;
 
-      // Limpa os estados locais
       setWaitingTickets([]);
       setCalledTickets([]);
       setCurrentTicket(null);
@@ -113,7 +133,6 @@ export default function DashboardPage() {
     }
   };
 
-  // --- NOVA FUNCIONALIDADE: GERAR PDF ---
   const generateReport = async (type: 'weekly' | 'monthly') => {
     setIsGeneratingPdf(true);
     try {
@@ -129,7 +148,6 @@ export default function DashboardPage() {
         title = "Relatório Mensal";
       }
 
-      // Buscar dados no Supabase filtrando por data
       const { data: tickets, error } = await supabase
         .from('tickets')
         .select('*')
@@ -144,16 +162,12 @@ export default function DashboardPage() {
         return;
       }
 
-      // Gerar PDF
       const doc = new jsPDF();
-      
-      // Cabeçalho
       doc.setFontSize(18);
       doc.text(storeName, 14, 22);
       doc.setFontSize(12);
       doc.text(`${title} - Gerado em ${now.toLocaleDateString()}`, 14, 32);
 
-      // Tabela
       const tableData = tickets.map(t => [
         t.ticket_number,
         t.customer_name,
@@ -166,7 +180,7 @@ export default function DashboardPage() {
         body: tableData,
         startY: 40,
         theme: 'grid',
-        headStyles: { fillColor: [37, 99, 235] } // Blue color
+        headStyles: { fillColor: [37, 99, 235] }
       });
 
       doc.save(`relatorio_${type}_${now.toISOString().split('T')[0]}.pdf`);
@@ -198,7 +212,6 @@ export default function DashboardPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50/30 font-sans overflow-hidden">
-      {/* Background decorative elements */}
       <div className="fixed top-0 left-0 w-full h-full overflow-hidden pointer-events-none">
         <div className="absolute -top-40 -right-40 w-80 h-80 bg-blue-100 rounded-full blur-3xl opacity-30"></div>
         <div className="absolute top-1/2 -left-20 w-60 h-60 bg-slate-100 rounded-full blur-3xl opacity-20"></div>
@@ -260,9 +273,7 @@ export default function DashboardPage() {
 
       <main className="relative z-10 p-4 lg:p-8 max-w-[1600px] mx-auto">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-          {/* Left Sidebar - Stats & Queue */}
           <div className="lg:col-span-3 space-y-6">
-            {/* Stats Cards */}
             <div className="bg-white/90 backdrop-blur-sm rounded-2xl border border-white/50 shadow-xl p-6">
               <div className="flex items-center justify-between mb-6">
                 <h3 className="text-sm font-bold text-slate-700 flex items-center gap-2">
@@ -313,7 +324,6 @@ export default function DashboardPage() {
               </div>
             </div>
 
-            {/* Waiting Queue */}
             <div className="bg-white/90 backdrop-blur-sm rounded-2xl border border-white/50 shadow-xl p-6 h-[calc(100vh-380px)]">
               <div className="flex items-center justify-between mb-6">
                 <h3 className="text-sm font-bold text-slate-700 flex items-center gap-2">
@@ -384,10 +394,8 @@ export default function DashboardPage() {
             </div>
           </div>
 
-          {/* Main Panel */}
           <div className="lg:col-span-6">
             <div className="bg-gradient-to-br from-white to-blue-50/50 rounded-3xl border border-white/50 shadow-2xl p-8 lg:p-12 h-full flex flex-col items-center justify-center relative overflow-hidden">
-              {/* Decorative elements */}
               <div className="absolute top-0 left-0 w-64 h-64 bg-gradient-to-br from-blue-100 to-transparent rounded-full -translate-x-32 -translate-y-32"></div>
               <div className="absolute bottom-0 right-0 w-96 h-96 bg-gradient-to-tl from-indigo-100 to-transparent rounded-full translate-x-48 translate-y-48"></div>
 
@@ -456,7 +464,6 @@ export default function DashboardPage() {
             </div>
           </div>
 
-          {/* Right Sidebar - Recent Activity */}
           <div className="lg:col-span-3">
             <div className="bg-gradient-to-br from-slate-900 to-blue-950 rounded-2xl border border-slate-800 shadow-2xl p-6 h-full">
               <div className="flex items-center justify-between mb-8">
@@ -512,7 +519,6 @@ export default function DashboardPage() {
         </div>
       </main>
 
-      {/* Settings Modal - MODIFIED SECTION */}
       {isSettingsOpen && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-fadeIn">
           <div className="bg-gradient-to-br from-white to-slate-50 rounded-3xl w-full max-w-md shadow-2xl animate-slideUp max-h-[90vh] overflow-y-auto">
@@ -589,7 +595,6 @@ export default function DashboardPage() {
                   </button>
                 </div>
 
-                {/* --- NOVA SEÇÃO: GESTÃO DE DADOS (Relatórios e Reset) --- */}
                 <div className="pt-6 border-t border-slate-200 mt-6">
                   <h3 className="text-sm font-bold text-slate-800 mb-4 flex items-center gap-2">
                     <FileText size={16} className="text-slate-500" />
@@ -632,7 +637,6 @@ export default function DashboardPage() {
                     </button>
                   </div>
                 </div>
-
               </div>
             </div>
           </div>
@@ -669,19 +673,7 @@ export default function DashboardPage() {
         
         ::-webkit-scrollbar-thumb {
           background: #cbd5e1;
-          border-radius: 3px;
-        }
-        
-        ::-webkit-scrollbar-thumb:hover {
-          background: #94a3b8;
-        }
-        
-        .dark-scrollbar::-webkit-scrollbar-thumb {
-          background: #475569;
-        }
-        
-        .dark-scrollbar::-webkit-scrollbar-thumb:hover {
-          background: #64748b;
+          border-radius: 10px;
         }
       `}</style>
     </div>
