@@ -5,6 +5,7 @@ import { Rocket, ShieldCheck, Clock, MessageCircle, BarChart3, Users, Zap } from
 
 export default function LandingPage() {
   const whatsappNumber = "244956821719";
+  const supportEmail = "dsousa.capital.ao+next@gmail.com";
 
   return (
     <div className="min-h-screen bg-white font-sans antialiased overflow-x-hidden">
@@ -86,7 +87,7 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* Secção de "Social Proof" e Factos (Para alongar com propósito) */}
+      {/* Secção de "Social Proof" e Factos */}
       <section className="py-28 px-6 bg-white max-w-6xl mx-auto">
         <div className="grid md:grid-cols-3 gap-16 text-center">
           <div className="flex flex-col items-center">
@@ -116,14 +117,31 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* Footer Compacto */}
+      {/* Footer Atualizado com Links Úteis */}
       <footer className="bg-slate-950 text-white py-12 px-8 border-t border-white/5">
-        <div className="max-w-6xl mx-auto flex flex-col md:flex-row justify-between items-center gap-6">
+        <div className="max-w-6xl mx-auto flex flex-col md:flex-row justify-between items-center gap-8">
+          
+          {/* Logo */}
           <div className="text-2xl font-black italic tracking-tighter">
             NEXT<span className="text-[#2b5de0]">.</span>
           </div>
-          <div className="text-slate-600 text-[10px] uppercase tracking-[0.5em] font-black">
-            © 2026 NEXT - Gestão de Filas | D'SOUSA CAPITAL, Angola
+
+          {/* Novos Links de Navegação do Rodapé */}
+          <div className="flex flex-wrap justify-center gap-8 text-[11px] font-bold uppercase tracking-widest text-slate-400">
+            <Link href="/faq" className="hover:text-white transition-colors">
+              FAQ
+            </Link>
+            <Link href="/cookies" className="hover:text-white transition-colors">
+              Cookies
+            </Link>
+            <a href={`mailto:${supportEmail}`} className="hover:text-[#2b5de0] transition-colors">
+              Suporte
+            </a>
+          </div>
+
+          {/* Copyright */}
+          <div className="text-slate-600 text-[10px] uppercase tracking-[0.5em] font-black text-center md:text-right">
+            © 2026 NEXT - Gestão de Filas <br className="md:hidden" /> | D'SOUSA CAPITAL, Angola
           </div>
         </div>
       </footer>

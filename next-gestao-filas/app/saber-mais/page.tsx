@@ -102,7 +102,7 @@ export default function AboutPage() {
             <p className="text-slate-500">Solicite uma demonstração para a sua empresa.</p>
           </div>
           <div className="flex flex-col gap-4 w-full md:w-auto">
-            <a href="mailto:Davidjordanmusic2005@gmail.com" className="flex items-center gap-4 text-lg font-medium hover:text-blue-600 transition-colors">
+            <a href="mailto:dsousa.capital.ao+next@gmail.com" className="flex items-center gap-4 text-lg font-medium hover:text-blue-600 transition-colors">
               <Mail className="text-blue-600" /> contato@next.ao
             </a>
             <a href="https://instagram.com/next_gestao" className="flex items-center gap-4 text-lg font-medium hover:text-blue-600 transition-colors">
