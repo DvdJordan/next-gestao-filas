@@ -1,8 +1,12 @@
 "use client";
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { supabase } from '@/lib/supabaseClient';
 import { useParams } from 'next/navigation';
-import { Ticket, User, ArrowRight, CheckCircle2, Loader2, Bell, Users, Clock, Sparkles, MapPin, Home, Shield, Check, Crown, Target, Zap, Star } from 'lucide-react';
+import { 
+  Ticket, User, ArrowRight, CheckCircle2, Loader2, Bell, Users, 
+  Clock, Sparkles, MapPin, Home, Shield, Check, Crown, Target, 
+  Zap, Star, XCircle 
+} from 'lucide-react';
 
 export default function CheckinPage() {
   const { id } = useParams();
@@ -13,79 +17,172 @@ export default function CheckinPage() {
   const [currentCalled, setCurrentCalled] = useState<any>(null);
   const [queue, setQueue] = useState<any[]>([]);
   const [queuePosition, setQueuePosition] = useState<number | null>(null);
+  
+  // Refs para controle de áudio e notificações sem re-renderizar
+  const lastCalledId = useRef<string | null>(null);
+
+  // --- FUNÇÕES DE FEEDBACK E NOTIFICAÇÃO ---
+  
+  const playNotificationSound = () => {
+    const audio = new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3');
+    audio.play().catch(e => console.log("Áudio aguardando interação inicial."));
+  };
+
+  const requestNotificationPermission = async () => {
+    if ("Notification" in window && Notification.permission === "default") {
+      await Notification.requestPermission();
+    }
+  };
+
+  const sendWebNotification = (title: string, body: string) => {
+    if ("Notification" in window && Notification.permission === "granted") {
+      new Notification(title, { 
+        body, 
+        icon: 'https://cdn-icons-png.flaticon.com/512/864/864685.png' 
+      });
+    }
+  };
+
+  // --- OTIMIZAÇÃO DO REFRESH QUEUE ---
+
+  const refreshQueue = useCallback(async () => {
+    if (!id) return;
+
+    try {
+      const { data, error } = await supabase
+        .from('tickets')
+        .select('*')
+        .eq('store_id', id)
+        .order('created_at', { ascending: true });
+
+      if (error) throw error;
+
+      if (data) {
+        const waiting = data.filter(t => t.status === 'waiting');
+        setQueue(waiting);
+        
+        // Lógica para o ticket do usuário atual
+        if (ticketIssued) {
+          const myUpdatedTicket = data.find(t => t.id === ticketIssued.id);
+          
+          // Se o ticket foi deletado (pelo admin ou desistência)
+          if (!myUpdatedTicket) {
+            setTicketIssued(null);
+            setQueuePosition(null);
+          } else {
+            // Se acabou de ser chamado
+            if (myUpdatedTicket.status === 'called' && ticketIssued.status !== 'called') {
+              playNotificationSound();
+              sendWebNotification("Sua vez!", "Por favor, dirija-se ao guichê.");
+            }
+            setTicketIssued(myUpdatedTicket);
+            const pos = waiting.findIndex(t => t.id === ticketIssued.id);
+            setQueuePosition(pos !== -1 ? pos + 1 : null);
+          }
+        }
+        
+        const called = data.filter(t => t.status === 'called');
+        const latestCalled = called.length > 0 ? called[called.length - 1] : null;
+        
+        // Feedback sonoro geral para qualquer nova chamada
+        if (latestCalled && latestCalled.id !== lastCalledId.current) {
+          if (lastCalledId.current !== null) playNotificationSound();
+          lastCalledId.current = latestCalled.id;
+        }
+        
+        setCurrentCalled(latestCalled);
+      }
+    } catch (err) {
+      console.error("Erro ao processar fila:", err);
+    }
+  }, [id, ticketIssued]);
+
+  // --- USE EFFECTS ---
 
   useEffect(() => {
     if (!id) return;
+    
     const fetchData = async () => {
-      const { data: profile } = await supabase.from('profiles').select('store_name').eq('id', id).single();
-      if (profile) setStoreName(profile.store_name);
-      refreshQueue();
+      try {
+        const { data: profile } = await supabase.from('profiles').select('store_name').eq('id', id).single();
+        if (profile) setStoreName(profile.store_name);
+        refreshQueue();
+      } catch (e) {
+        setStoreName("Loja");
+      }
     };
-    fetchData();
 
-    const channel = supabase.channel('checkin-sync')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'tickets', filter: `store_id=eq.${id}` }, () => {
+    fetchData();
+    requestNotificationPermission();
+
+    const channel = supabase.channel(`checkin-realtime-${id}`)
+      .on('postgres_changes', { 
+        event: '*', 
+        schema: 'public', 
+        table: 'tickets', 
+        filter: `store_id=eq.${id}` 
+      }, () => {
         refreshQueue();
       })
       .subscribe();
 
     return () => { supabase.removeChannel(channel); };
-  }, [id]);
+  }, [id, refreshQueue]);
 
-  async function refreshQueue() {
-    const { data } = await supabase.from('tickets').select('*').eq('store_id', id).order('created_at', { ascending: true });
-    if (data) {
-      const waiting = data.filter(t => t.status === 'waiting');
-      setQueue(waiting);
-      
-      // Encontrar posição do ticket do usuário atual
-      if (ticketIssued) {
-        const userPosition = waiting.findIndex(t => t.id === ticketIssued.id);
-        setQueuePosition(userPosition !== -1 ? userPosition + 1 : null);
-      }
-      
-      const called = data.filter(t => t.status === 'called');
-      setCurrentCalled(called.length > 0 ? called[called.length - 1] : null);
-    }
-  }
+  // --- ACTIONS ---
 
   const handleGetTicket = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!customerName.trim()) return;
+    if (!customerName.trim() || loading) return;
     setLoading(true);
-    const { data: last } = await supabase.from('tickets').select('ticket_number').eq('store_id', id).order('created_at', { ascending: false }).limit(1);
-    const nextNumber = last && last.length > 0 ? last[0].ticket_number + 1 : 1;
-    const { data, error } = await supabase.from('tickets').insert([{ 
-      store_id: id, 
-      customer_name: customerName, 
-      ticket_number: nextNumber, 
-      status: 'waiting' 
-    }]).select().single();
-    
-    if (!error && data) {
-      setTicketIssued(data);
-      
-      // Calcular posição na fila
-      const { data: allWaiting } = await supabase
+
+    try {
+      const { data: last } = await supabase
         .from('tickets')
-        .select('*')
+        .select('ticket_number')
         .eq('store_id', id)
-        .eq('status', 'waiting')
-        .order('created_at', { ascending: true });
-        
-      if (allWaiting) {
-        const position = allWaiting.findIndex(t => t.id === data.id) + 1;
-        setQueuePosition(position);
-      }
+        .order('created_at', { ascending: false })
+        .limit(1);
+
+      const nextNumber = last && last.length > 0 ? last[0].ticket_number + 1 : 1;
+
+      const { data, error } = await supabase.from('tickets').insert([{ 
+        store_id: id, 
+        customer_name: customerName, 
+        ticket_number: nextNumber, 
+        status: 'waiting' 
+      }]).select().single();
+      
+      if (error) throw error;
+      setTicketIssued(data);
+      refreshQueue(); // Garante atualização imediata da posição
+    } catch (err) {
+      alert("Erro ao gerar senha. Tente novamente.");
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
+  };
+
+  const handleCancelTicket = async () => {
+    if (!ticketIssued || !confirm("Deseja realmente sair da fila?")) return;
+    setLoading(true);
+    try {
+      await supabase.from('tickets').delete().eq('id', ticketIssued.id);
+      setTicketIssued(null);
+      setQueuePosition(null);
+    } catch (err) {
+      alert("Erro ao cancelar.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   const getWaitTimeEstimate = (position: number) => {
-    // Estimativa de 5 minutos por pessoa na frente
     const minutes = (position - 1) * 5;
     return minutes > 0 ? `${minutes} min` : 'Próximo';
   };
+
+  // --- LAYOUT ---
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 font-sans overflow-hidden relative">
@@ -232,6 +329,15 @@ export default function CheckinPage() {
                     </div>
                   </div>
                 </div>
+
+                {/* BOTÃO DESISTIR - Integrado no estilo */}
+                <button 
+                  onClick={handleCancelTicket}
+                  disabled={loading}
+                  className="w-full mb-6 py-3 flex items-center justify-center gap-2 text-red-500 font-semibold hover:bg-red-50 rounded-xl transition-all border border-dashed border-red-200"
+                >
+                  {loading ? <Loader2 className="animate-spin" size={18} /> : <><XCircle size={18} /> Desistir da Fila</>}
+                </button>
 
                 <div className="space-y-4">
                   <div className="flex items-center gap-3 p-3 bg-slate-50 rounded-lg">

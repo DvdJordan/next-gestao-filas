@@ -28,14 +28,15 @@ export default function DashboardPage() {
   const router = useRouter();
 
   useEffect(() => {
-   const { data: { subscription } } = supabase.auth.onAuthStateChange((event: any) => {
+    let channel: any;
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event: any) => {
       if (event === 'TOKEN_REFRESH_FAILED' || event === 'SIGNED_OUT') {
         router.push('/login');
       }
     });
     
     const init = async () => {
-      // getUser() valida o token no servidor, evitando o erro silencioso
       const { data: { user }, error: authError } = await supabase.auth.getUser();
       
       if (authError || !user) { 
@@ -43,40 +44,54 @@ export default function DashboardPage() {
         return; 
       }
       
-      setStoreId(user.id);
+      const uid = user.id;
+      setStoreId(uid);
 
       const { data: profile } = await supabase
         .from('profiles')
         .select('store_name')
-        .eq('id', user.id)
+        .eq('id', uid)
         .single();
         
       setStoreName(profile?.store_name || 'Minha Loja');
       setNewStoreName(profile?.store_name || 'Minha Loja');
       
-      await refreshData(user.id);
+      await refreshData(uid);
       setLoading(false);
+
+      // CORREÇÃO: Criar canal específico para a loja usando filter
+      channel = supabase.channel(`dashboard-${uid}`)
+        .on(
+          'postgres_changes', 
+          { 
+            event: '*', 
+            schema: 'public', 
+            table: 'tickets',
+            filter: `store_id=eq.${uid}` // Ouve apenas mudanças DESTA loja
+          }, 
+          () => {
+            refreshData(uid);
+          }
+        )
+        .subscribe();
     };
 
     init();
 
-    const channel = supabase.channel('dashboard-realtime')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'tickets' }, () => {
-        // Busca o usuário atual de forma segura antes de atualizar
-        supabase.auth.getUser().then(({data}) => {
-          if (data.user) refreshData(data.user.id);
-        });
-      })
-      .subscribe();
-
     return () => { 
       subscription.unsubscribe();
-      supabase.removeChannel(channel); 
+      if (channel) supabase.removeChannel(channel); 
     };
   }, [router]);
 
   async function refreshData(uid: string) {
-    const { data } = await supabase.from('tickets').select('*').eq('store_id', uid).order('created_at', { ascending: true });
+    if (!uid) return;
+    const { data } = await supabase
+      .from('tickets')
+      .select('*')
+      .eq('store_id', uid)
+      .order('created_at', { ascending: true });
+
     if (data) {
       setWaitingTickets(data.filter(t => t.status === 'waiting'));
       const called = data.filter(t => t.status === 'called');
@@ -88,7 +103,9 @@ export default function DashboardPage() {
   const callNext = async () => {
     if (waitingTickets.length === 0) return;
     const nextTicket = waitingTickets[0];
-    await supabase.from('tickets').update({ status: 'called', updated_at: new Date().toISOString() }).eq('id', nextTicket.id);
+    await supabase.from('tickets')
+      .update({ status: 'called', updated_at: new Date().toISOString() })
+      .eq('id', nextTicket.id);
   };
 
   const saveSettings = async () => {
