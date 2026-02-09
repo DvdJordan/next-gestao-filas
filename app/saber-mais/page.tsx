@@ -105,7 +105,10 @@ export default function AboutPage() {
             <a href="mailto:dsousa.capital.ao+next@gmail.com" className="flex items-center gap-4 text-lg font-medium hover:text-blue-600 transition-colors">
               <Mail className="text-blue-600" /> contato@next.ao
             </a>
-            <a href="https://www.instagram.com/dsousa.capital.ao" className="flex items-center gap-4 text-lg font-medium hover:text-blue-600 transition-colors">
+            <a href="https://www.instagram.com/dsousa.capital.ao" 
+            target="_blank" 
+             rel="noopener noreferrer"
+             className="flex items-center gap-4 text-lg font-medium hover:text-blue-600 transition-colors">
               <Instagram className="text-blue-600" /> @next_gestao
             </a>
           </div>
