@@ -12,6 +12,15 @@ export const metadata: Metadata = {
   },
   description: "Sistema premium de gestão de filas para Angola.",
   manifest: '/manifest.json',
+
+  appleWebApp: {
+    title: 'NEXT. Filas',
+    statusBarStyle: 'default',
+    capable: true,
+  },
+  icons: {
+    apple: '/apple-touch-icon.png', // Aqui aponta para a tua logo nova
+  },
 };
 
 // Nova forma correta de definir a cor do navegador
