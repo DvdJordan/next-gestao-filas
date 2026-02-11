@@ -7,9 +7,12 @@ import {
   Clock, Sparkles, MapPin, Home, Shield, Check, Crown, Target, 
   Zap, Star, XCircle 
 } from 'lucide-react';
+import { usePWA } from './usePWA';
+import { PWABanner } from './PWABanner';
 
 export default function CheckinPage() {
   const { id } = useParams();
+  const { installPrompt, isIOS, isStandalone, installApp } = usePWA();
   const [storeName, setStoreName] = useState('Carregando...');
   const [customerName, setCustomerName] = useState('');
   const [loading, setLoading] = useState(false);
@@ -211,6 +214,15 @@ export default function CheckinPage() {
             </div>
           </div>
         </header>
+
+        {/* --- COLE AQUI O COMPONENTE --- */}
+        <PWABanner 
+          installPrompt={installPrompt} 
+          isIOS={isIOS} 
+          isStandalone={isStandalone} 
+          onInstall={installApp} 
+        />
+        {/* ------------------------------ */}
 
         {/* Main Content */}
         <main className="flex-1 flex flex-col gap-6 overflow-y-auto pb-6">

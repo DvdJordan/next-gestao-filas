@@ -1,0 +1,17 @@
+{
+  "name": "NEXT-Fila Inteligente",
+  "short_name": "Fila",
+  "description": "Acompanhe sua vez em tempo real",
+  "start_url": "/checkin", 
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#3b82f6",
+  "icons": [
+    {
+      "src": "https://cdn-icons-png.flaticon.com/512/864/864685.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}

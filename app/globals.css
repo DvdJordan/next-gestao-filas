@@ -13,20 +13,40 @@
   --foreground: #334155;
 }
 
+/* 1. Ajustes de Comportamento de App */
+html, body {
+  /* Evita aquele "bounce" (elástico) no topo e fundo, comum no iOS */
+  overscroll-behavior-y: none;
+  /* Melhora o scroll no mobile */
+  -webkit-overflow-scrolling: touch;
+}
+
 body {
   background: var(--background);
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  /* Impede que o usuário selecione texto nos botões (parece mais App) */
+  user-select: none;
 }
 
-/* Criando componentes sem causar erro de compilação */
+/* 2. Regra Crítica para Inputs no PWA (Evita Zoom do iOS) */
+input, select, textarea {
+  font-size: 16px !important; /* iPhone não dará zoom ao clicar no nome */
+  user-select: text; /* Permite que o usuário digite o nome normalmente */
+}
+
+/* 3. Remover o delay de clique nos botões */
+button, .btn-premium {
+  touch-action: manipulation;
+}
+
 @layer components {
   .btn-premium {
     background-color: var(--color-next-dark);
     color: white;
-    padding: 0.75rem 1.5rem; /* Isso substitui o px-6 py-3 */
+    padding: 0.75rem 1.5rem;
     border-radius: var(--radius-next);
     font-weight: 500;
     transition: all 0.2s;
