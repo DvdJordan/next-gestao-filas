@@ -1,9 +1,15 @@
-import type { Metadata, Viewport } from "next"; // Importe Viewport
-import { Geist, Geist_Mono } from "next/font/google";
+import type { Metadata, Viewport } from "next";
+import { Inter } from "next/font/google";
 import "./globals.css";
 
-const geistSans = Geist({ variable: "--font-geist-sans", subsets: ["latin"] });
-const geistMono = Geist_Mono({ variable: "--font-geist-mono", subsets: ["latin"] });
+const inter = Inter({ subsets: ["latin"] });
+
+export const viewport: Viewport = {
+  themeColor: "#0F172A",
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 1,
+};
 
 export const metadata: Metadata = {
   title: {
@@ -12,34 +18,33 @@ export const metadata: Metadata = {
   },
   description: "Sistema premium de gestão de filas para Angola.",
   manifest: '/manifest.json',
-
   appleWebApp: {
     title: 'NEXT. Filas',
     statusBarStyle: 'default',
     capable: true,
   },
   icons: {
-    icon: '/favicon.png',       // <--- ADICIONE ESTA LINHA (Ícone da Aba/PC)
-    apple: '/apple-touch-icon.png', // Aqui aponta para a tua logo nova
+    icon: [
+      { url: '/favicon.png?v=1', href: '/favicon.png?v=1' },
+    ],
+    apple: [
+      { url: '/apple-touch-icon.png?v=1', href: '/apple-touch-icon.png?v=1' },
+    ],
   },
 };
 
-// Nova forma correta de definir a cor do navegador
-export const viewport: Viewport = {
-  themeColor: '#0F172A',
-};
-
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default function RootLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   return (
     <html lang="pt-ao">
       <head>
-        <meta name="mobile-web-app-capable" content="yes" />
-        <meta name="apple-mobile-web-app-status-bar-style" content="default" />
-        <link rel="apple-touch-icon" href="/icon-192x192.png" />
+        {/* Link extra para garantir o favicon no PC */}
+        <link rel="icon" href="/favicon.png?v=1" />
       </head>
-      <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
-        {children}
-      </body>
+      <body className={inter.className}>{children}</body>
     </html>
   );
 }
