@@ -19,6 +19,7 @@ export const metadata: Metadata = {
     capable: true,
   },
   icons: {
+    icon: '/favicon.png',       // <--- ADICIONE ESTA LINHA (Ícone da Aba/PC)
     apple: '/apple-touch-icon.png', // Aqui aponta para a tua logo nova
   },
 };
