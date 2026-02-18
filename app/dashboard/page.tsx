@@ -24,6 +24,8 @@ export default function DashboardPage() {
   const [isResetting, setIsResetting] = useState(false);
   const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [storeSlug, setStoreSlug] = useState<string>('');
+  
 
   const router = useRouter();
 
@@ -48,13 +50,14 @@ export default function DashboardPage() {
       setStoreId(uid);
 
       const { data: profile } = await supabase
-        .from('profiles')
-        .select('store_name')
-        .eq('id', uid)
-        .single();
-        
-      setStoreName(profile?.store_name || 'Minha Loja');
-      setNewStoreName(profile?.store_name || 'Minha Loja');
+  .from('profiles')
+  .select('store_name, slug') // <-- Certifique-se de buscar o slug aqui
+  .eq('id', uid)
+  .single();
+  
+setStoreName(profile?.store_name || 'Minha Loja');
+setNewStoreName(profile?.store_name || 'Minha Loja');
+setStoreSlug(profile?.slug || ''); // <-- Adicione esta linha para salvar o slug
       
       await refreshData(uid);
       setLoading(false);
@@ -108,27 +111,45 @@ export default function DashboardPage() {
       .eq('id', nextTicket.id);
   };
 
+  // ... (mantenha o código anterior igual até o saveSettings)
+
   const saveSettings = async () => {
     if (!newStoreName.trim()) return;
     setIsSaving(true);
     
+    // Gerar o slug (ex: "Loja do Mario" -> "loja-do-mario")
+    const generatedSlug = newStoreName
+      .toLowerCase()
+      .trim()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .replace(/[^a-z0-9 -]/g, '')
+      .replace(/\s+/g, '-')
+      .replace(/-+/g, '-');
+
     const { error } = await supabase
       .from('profiles')
-      .update({ store_name: newStoreName })
+      .update({ 
+        store_name: newStoreName,
+        slug: generatedSlug 
+      })
       .eq('id', storeId);
 
     if (!error) {
-      setStoreName(newStoreName);
+      setStoreName(newStoreName); 
+      setNewStoreName(newStoreName);
       setIsSettingsOpen(false);
+      alert("Configurações atualizadas!");
     } else {
-      alert("Erro ao atualizar: " + error.message);
+      alert("Erro ao salvar: " + error.message);
     }
     setIsSaving(false);
   };
 
+  // --- FUNÇÃO QUE ESTAVA FALTANDO ---
   const handleResetDay = async () => {
-    if (!confirm("⚠️ ATENÇÃO: Isso apagará TODOS os tickets de hoje e reiniciará a contagem do zero.\n\nTem certeza que deseja começar um novo dia?")) return;
-    
+    if (!confirm("⚠️ ATENÇÃO: Isso apagará TODOS os tickets de hoje.\n\nTem certeza?")) return;
+
     setIsResetting(true);
     try {
       const { error } = await supabase
@@ -142,15 +163,17 @@ export default function DashboardPage() {
       setCalledTickets([]);
       setCurrentTicket(null);
       setIsSettingsOpen(false);
-      alert("Novo dia iniciado com sucesso! A fila foi limpa.");
+      alert("Fila resetada para um novo dia!");
     } catch (error: any) {
       alert("Erro ao resetar: " + error.message);
     } finally {
       setIsResetting(false);
     }
   };
+  // --------------------------------
 
   const generateReport = async (type: 'weekly' | 'monthly') => {
+// ... (segue o restante do código)
     setIsGeneratingPdf(true);
     try {
       const now = new Date();
@@ -210,11 +233,12 @@ export default function DashboardPage() {
   };
 
   const copyCheckinLink = () => {
-    const link = `${window.location.origin}/checkin/${storeId}`;
-    navigator.clipboard.writeText(link);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
-  };
+  // Troque storeId por storeSlug
+  const link = `${window.location.origin}/checkin/${storeSlug}`; 
+  navigator.clipboard.writeText(link);
+  setCopied(true);
+  setTimeout(() => setCopied(false), 2000);
+};
 
   if (loading) return (
     <div className="h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 to-blue-50">
@@ -238,21 +262,28 @@ export default function DashboardPage() {
       <header className="sticky top-0 z-50 bg-white/80 backdrop-blur-xl border-b border-white/20 shadow-sm">
         <div className="px-6 lg:px-8 py-4">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <div className="relative">
-                <div className="w-12 h-12 bg-gradient-to-br from-blue-600 to-indigo-700 rounded-xl flex items-center justify-center shadow-lg">
-                  <Ticket className="text-white" size={24} />
-                </div>
-                <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-emerald-400 rounded-full border-2 border-white"></div>
-              </div>
-              <div>
-                <h1 className="text-lg font-bold text-slate-800">{storeName}</h1>
-                <p className="text-xs text-slate-500 flex items-center gap-1">
-                  <span className="w-2 h-2 bg-emerald-400 rounded-full"></span>
-                  Sistema de Gestão de Fila
-                </p>
-              </div>
-            </div>
+           <div className="flex items-center gap-4">
+  <div className="relative">
+    {/* Container sem fundo (bg), sem borda e sem sombra */}
+    <div className="w-12 h-12 flex items-center justify-center overflow-hidden">
+      <img 
+        src="/logo.png" 
+        alt="Logo" 
+        className="w-full h-full object-contain" 
+      />
+    </div>
+    {/* Ponto de status online */}
+    <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-emerald-400 rounded-full border-2 border-white"></div>
+  </div>
+  
+  <div>
+    <h1 className="text-lg font-bold text-slate-800">{storeName}</h1>
+    <p className="text-xs text-slate-500 flex items-center gap-1">
+      <span className="w-2 h-2 bg-emerald-400 rounded-full"></span>
+      Sistema de Gestão de Fila
+    </p>
+  </div>
+</div>
 
             <div className="flex items-center gap-2">
               <button 
@@ -583,8 +614,8 @@ export default function DashboardPage() {
                     <div className="flex items-center justify-between">
                       <div>
                         <p className="text-sm font-medium text-blue-700 truncate">
-                          {window.location.origin}/checkin/{storeId}
-                        </p>
+                          {window.location.origin}/checkin/{storeSlug}
+                         </p>
                         <p className="text-xs text-blue-600 mt-1">Clique para copiar o link</p>
                       </div>
                       <QrCode className="text-blue-600 group-hover:scale-110 transition-transform" size={20} />

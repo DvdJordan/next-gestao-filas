@@ -11,9 +11,11 @@ import { usePWA } from './usePWA';
 import { PWABanner } from './PWABanner';
 
 export default function CheckinPage() {
-  const { id } = useParams();
+  const { id: slug } = useParams();
   const { installPrompt, isIOS, isStandalone, installApp } = usePWA();
   const [storeName, setStoreName] = useState('Carregando...');
+  const [realStoreId, setRealStoreId] = useState<string | null>(null); // Novo
+  const [notFound, setNotFound] = useState(false); // Novo
   const [customerName, setCustomerName] = useState('');
   const [loading, setLoading] = useState(false);
   const [ticketIssued, setTicketIssued] = useState<any>(null);
@@ -48,14 +50,19 @@ export default function CheckinPage() {
 
   // --- OTIMIZAÇÃO DO REFRESH QUEUE ---
 
-  const refreshQueue = useCallback(async () => {
-    if (!id) return;
+  const refreshQueue = useCallback(async (storeIdToUse?: string) => {
+    // Tenta usar o ID passado por parâmetro primeiro, se não tiver, usa o do estado
+    const targetId = storeIdToUse || realStoreId; 
+    if (!targetId) {
+        console.log("Sem ID da loja para atualizar a fila.");
+        return;
+    }
 
     try {
       const { data, error } = await supabase
         .from('tickets')
         .select('*')
-        .eq('store_id', id)
+        .eq('store_id', targetId)
         .order('created_at', { ascending: true });
 
       if (error) throw error;
@@ -64,30 +71,32 @@ export default function CheckinPage() {
         const waiting = data.filter(t => t.status === 'waiting');
         setQueue(waiting);
         
-        // Lógica para o ticket do usuário atual
-        if (ticketIssued) {
-          const myUpdatedTicket = data.find(t => t.id === ticketIssued.id);
+        // Usamos setTicketIssued com callback para evitar dependência no useCallback
+        setTicketIssued((prevTicket: any) => {
+          if (!prevTicket) return null;
+
+          const myUpdatedTicket = data.find(t => t.id === prevTicket.id);
           
-          // Se o ticket foi deletado (pelo admin ou desistência)
           if (!myUpdatedTicket) {
-            setTicketIssued(null);
             setQueuePosition(null);
-          } else {
-            // Se acabou de ser chamado
-            if (myUpdatedTicket.status === 'called' && ticketIssued.status !== 'called') {
-              playNotificationSound();
-              sendWebNotification("Sua vez!", "Por favor, dirija-se ao guichê.");
-            }
-            setTicketIssued(myUpdatedTicket);
-            const pos = waiting.findIndex(t => t.id === ticketIssued.id);
-            setQueuePosition(pos !== -1 ? pos + 1 : null);
+            return null;
           }
-        }
+
+          // Se acabou de ser chamado
+          if (myUpdatedTicket.status === 'called' && prevTicket.status !== 'called') {
+            playNotificationSound();
+            sendWebNotification("Sua vez!", "Por favor, dirija-se ao guichê.");
+          }
+
+          const pos = waiting.findIndex(t => t.id === myUpdatedTicket.id);
+          setQueuePosition(pos !== -1 ? pos + 1 : null);
+          
+          return myUpdatedTicket;
+        });
         
         const called = data.filter(t => t.status === 'called');
         const latestCalled = called.length > 0 ? called[called.length - 1] : null;
         
-        // Feedback sonoro geral para qualquer nova chamada
         if (latestCalled && latestCalled.id !== lastCalledId.current) {
           if (lastCalledId.current !== null) playNotificationSound();
           lastCalledId.current = latestCalled.id;
@@ -98,59 +107,84 @@ export default function CheckinPage() {
     } catch (err) {
       console.error("Erro ao processar fila:", err);
     }
-  }, [id, ticketIssued]);
+  }, [realStoreId]); // Removido ticketIssued daqui para evitar loops
 
   // --- USE EFFECTS ---
 
-  useEffect(() => {
-    if (!id) return;
-    
-    const fetchData = async () => {
-      try {
-        const { data: profile } = await supabase.from('profiles').select('store_name').eq('id', id).single();
-        if (profile) setStoreName(profile.store_name);
-        refreshQueue();
-      } catch (e) {
-        setStoreName("Loja");
+ useEffect(() => {
+  if (!slug) return;
+  
+  const fetchStoreBySlug = async () => {
+    try {
+      const { data: profile, error } = await supabase
+        .from('profiles')
+        .select('id, store_name')
+        .eq('slug', slug)
+        .single();
+
+      if (error || !profile) {
+        setNotFound(true);
+        return;
       }
-    };
 
-    fetchData();
-    requestNotificationPermission();
+      setStoreName(profile.store_name);
+      setRealStoreId(profile.id);
+      
+      // Carrega a fila inicial
+      refreshQueue(profile.id);
 
-    const channel = supabase.channel(`checkin-realtime-${id}`)
-      .on('postgres_changes', { 
-        event: '*', 
-        schema: 'public', 
-        table: 'tickets', 
-        filter: `store_id=eq.${id}` 
-      }, () => {
-        refreshQueue();
-      })
-      .subscribe();
+      // --- CONFIGURAÇÃO DO REALTIME ---
+      // Usamos um nome de canal único
+      const channel = supabase.channel(`fila-${profile.id}`)
+        .on('postgres_changes', { 
+          event: '*', 
+          schema: 'public', 
+          table: 'tickets', 
+          filter: `store_id=eq.${profile.id}` 
+        }, (payload) => {
+          console.log("Mudança detectada via Realtime!", payload);
+          // Chamamos a função passando o ID diretamente para não ter erro
+          refreshQueue(profile.id);
+        })
+        .subscribe((status) => {
+          console.log("Status da conexão:", status);
+        });
 
-    return () => { supabase.removeChannel(channel); };
-  }, [id, refreshQueue]);
+      return () => { 
+        console.log("Limpando canal...");
+        supabase.removeChannel(channel); 
+      };
+    } catch (e) {
+      console.error("Erro no fetchStoreBySlug:", e);
+      setNotFound(true);
+    }
+  };
+
+  fetchStoreBySlug();
+  // ATENÇÃO: Deixe APENAS o [slug] aqui. 
+  // Se colocar refreshQueue, ele pode resetar o canal toda hora.
+}, [slug]);
 
   // --- ACTIONS ---
 
   const handleGetTicket = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!customerName.trim() || loading) return;
+    // Adicione o !realStoreId na verificação de segurança
+    if (!customerName.trim() || loading || !realStoreId) return; 
     setLoading(true);
 
     try {
       const { data: last } = await supabase
         .from('tickets')
         .select('ticket_number')
-        .eq('store_id', id)
+        .eq('store_id', realStoreId) // <--- TROQUE AQUI
         .order('created_at', { ascending: false })
         .limit(1);
 
       const nextNumber = last && last.length > 0 ? last[0].ticket_number + 1 : 1;
 
       const { data, error } = await supabase.from('tickets').insert([{ 
-        store_id: id, 
+        store_id: realStoreId, // <--- TROQUE AQUI TAMBÉM
         customer_name: customerName, 
         ticket_number: nextNumber, 
         status: 'waiting' 
@@ -185,7 +219,20 @@ export default function CheckinPage() {
     return minutes > 0 ? `${minutes} min` : 'Próximo';
   };
 
+   // ... final dos seus UseEffects e Funções
+
   // --- LAYOUT ---
+
+  // --- TRAVA DE SEGURANÇA (COLE AQUI) ---
+  if (notFound) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center p-6 text-center bg-slate-50">
+        <XCircle size={64} className="text-red-400 mb-4" />
+        <h1 className="text-2xl font-bold text-slate-800">Loja não encontrada</h1>
+        <p className="text-slate-600 mt-2">Verifique o link ou peça o QR Code correto ao atendente.</p>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 font-sans overflow-hidden relative">
@@ -201,14 +248,18 @@ export default function CheckinPage() {
         <header className="py-6">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-3">
-              <div className="w-12 h-12 bg-gradient-to-r from-blue-500 to-blue-600 rounded-xl flex items-center justify-center shadow-lg">
-                <Crown className="text-white" size={24} />
-              </div>
+              <div className="w-12 h-12 bg-white rounded-xl flex items-center justify-center shadow-lg overflow-hidden border border-slate-100">
+  <img 
+    src="/logo.png" 
+    alt="Logo do Sistema" 
+    className="w-full h-full object-cover" 
+  />
+</div>
               <div>
                 <h1 className="text-xl font-bold text-slate-800">{storeName}</h1>
                 <p className="text-sm text-slate-600 flex items-center gap-2">
                   <span className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></span>
-                  Sistema de Fila Inteligente
+                  Sistema de Gestão de Filas
                 </p>
               </div>
             </div>
@@ -516,9 +567,13 @@ export default function CheckinPage() {
         <footer className="py-6 border-t border-slate-200">
           <div className="text-center">
             <div className="flex items-center justify-center gap-2 mb-3">
-              <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-blue-600 rounded-lg flex items-center justify-center">
-                <Crown className="text-white" size={16} />
-              </div>
+              <div className="w-8 h-8 bg-white rounded-xl flex items-center justify-center shadow-lg overflow-hidden border border-slate-100">
+  <img 
+    src="/logo.png" 
+    alt="Logo do Sistema" 
+    className="w-full h-full object-cover" 
+  />
+</div>
               <span className="font-bold text-slate-800">NEXT</span>
             </div>
             <p className="text-sm text-slate-600">
