@@ -1,746 +1,264 @@
 "use client";
 
-import React, { useEffect, useRef, useState } from "react";
+import React from 'react';
+import Link from 'next/link';
 import {
   Rocket, ShieldCheck, Clock, MessageCircle, BarChart3,
-  Users, Zap, Check, Smartphone, Bell, Mail, Instagram,
-  ArrowRight, ChevronRight, Play
-} from "lucide-react";
+  Users, Zap, Check, Smartphone, Bell, Mail, Instagram
+} from 'lucide-react';
 
-/* ─── Google Fonts & Global Styles ─────────────────────────────── */
-const GlobalStyles = () => (
-  <style>{`
-    @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&family=Outfit:wght@300;400;500;600;700&display=swap');
-
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
-    :root {
-      --blue:       #2B5DE0;
-      --blue-dark:  #1E46B3;
-      --blue-light: #EEF2FD;
-      --ink:        #0A0D14;
-      --ink-2:      #1C2033;
-      --muted:      #6B7280;
-      --border:     #E5E7EB;
-      --surface:    #F8F9FB;
-      --white:      #FFFFFF;
-    }
-
-    html { scroll-behavior: smooth; }
-
-    body {
-      font-family: 'Plus Jakarta Sans', sans-serif;
-      background: var(--white);
-      color: var(--ink);
-      overflow-x: hidden;
-    }
-
-    /* ── Scroll Reveal ── */
-    .reveal {
-      opacity: 0;
-      transform: translateY(32px);
-      transition: opacity 0.7s cubic-bezier(.16,1,.3,1), transform 0.7s cubic-bezier(.16,1,.3,1);
-    }
-    .reveal.visible { opacity: 1; transform: translateY(0); }
-    .reveal-delay-1 { transition-delay: 0.1s; }
-    .reveal-delay-2 { transition-delay: 0.2s; }
-    .reveal-delay-3 { transition-delay: 0.3s; }
-    .reveal-delay-4 { transition-delay: 0.4s; }
-
-    /* ── Marquee ── */
-    @keyframes marquee {
-      from { transform: translateX(0); }
-      to   { transform: translateX(-50%); }
-    }
-    .marquee-track { animation: marquee 35s linear infinite; display: flex; width: max-content; }
-    .marquee-track:hover { animation-play-state: paused; }
-
-    /* ── Float ── */
-    @keyframes float {
-      0%,100% { transform: translateY(0) rotate(1deg); }
-      50%      { transform: translateY(-18px) rotate(-1deg); }
-    }
-    .float { animation: float 5s ease-in-out infinite; }
-
-    /* ── Ping ── */
-    @keyframes ping { 75%,100% { transform: scale(1.8); opacity: 0; } }
-    .ping { animation: ping 1.5s cubic-bezier(0,0,.2,1) infinite; }
-
-    /* ── Queue Pulse ── */
-    @keyframes qpulse { 0%,100% { opacity: .6; } 50% { opacity: 1; } }
-    .qpulse { animation: qpulse 2s ease-in-out infinite; }
-
-    /* ── Gradient Mesh ── */
-    .mesh-bg {
-      background:
-        radial-gradient(ellipse 70% 60% at 80% 20%, rgba(43,93,224,.09) 0%, transparent 65%),
-        radial-gradient(ellipse 50% 50% at 10% 80%, rgba(43,93,224,.06) 0%, transparent 60%),
-        #fff;
-    }
-
-    /* ── Card hover ── */
-    .card-hover {
-      transition: transform .35s cubic-bezier(.16,1,.3,1), box-shadow .35s ease;
-    }
-    .card-hover:hover { transform: translateY(-6px); box-shadow: 0 20px 48px rgba(43,93,224,.13); }
-
-    /* ── Button ── */
-    .btn-primary {
-      display: inline-flex; align-items: center; gap: 12px;
-      padding: 18px 36px;
-      background: var(--blue);
-      color: #fff;
-      border-radius: 16px;
-      font-family: 'Outfit', sans-serif;
-      font-weight: 600;
-      font-size: 15px;
-      letter-spacing: .08em;
-      text-transform: uppercase;
-      text-decoration: none;
-      transition: background .2s, transform .2s, box-shadow .2s;
-      box-shadow: 0 8px 32px rgba(43,93,224,.30);
-    }
-    .btn-primary:hover {
-      background: var(--blue-dark);
-      transform: translateY(-2px);
-      box-shadow: 0 14px 40px rgba(43,93,224,.40);
-    }
-    .btn-primary:active { transform: scale(.97); }
-
-    .btn-ghost {
-      display: inline-flex; align-items: center; gap: 8px;
-      padding: 14px 28px;
-      background: transparent;
-      color: var(--ink);
-      border: 2px solid var(--border);
-      border-radius: 14px;
-      font-family: 'Outfit', sans-serif;
-      font-weight: 600;
-      font-size: 13px;
-      letter-spacing: .06em;
-      text-transform: uppercase;
-      text-decoration: none;
-      transition: border-color .2s, color .2s;
-    }
-    .btn-ghost:hover { border-color: var(--blue); color: var(--blue); }
-
-    /* ── Nav link ── */
-    .nav-link {
-      font-family: 'DM Sans', sans-serif;
-      font-weight: 600;
-      font-size: 13px;
-      letter-spacing: .08em;
-      text-transform: uppercase;
-      color: var(--muted);
-      text-decoration: none;
-      transition: color .2s;
-    }
-    .nav-link:hover { color: var(--blue); }
-
-    /* ── Queue widget ── */
-    .queue-widget {
-      background: #fff;
-      border: 1px solid var(--border);
-      border-radius: 24px;
-      box-shadow: 0 24px 64px rgba(10,13,20,.10);
-      width: 320px;
-      overflow: hidden;
-    }
-
-    /* ── Step connector ── */
-    .step-connector {
-      flex: 1;
-      height: 2px;
-      background: linear-gradient(90deg, var(--blue) 0%, var(--border) 100%);
-      margin: 0 8px;
-    }
-
-    /* ── Stat counter ── */
-    .stat-num {
-      font-family: 'Outfit', sans-serif;
-      font-size: clamp(42px, 5vw, 60px);
-      font-weight: 600;
-      color: var(--ink);
-      line-height: 1;
-    }
-
-    /* ── Section tag ── */
-    .section-tag {
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
-      padding: 6px 16px;
-      background: var(--blue-light);
-      color: var(--blue);
-      border-radius: 100px;
-      font-size: 11px;
-      font-weight: 600;
-      letter-spacing: .12em;
-      text-transform: uppercase;
-      margin-bottom: 20px;
-    }
-
-    /* ── Pricing ── */
-    .plan-popular {
-      position: absolute;
-      top: -14px; left: 50%; transform: translateX(-50%);
-      background: var(--blue);
-      color: #fff;
-      font-family: 'Outfit', sans-serif;
-      font-size: 10px;
-      font-weight: 600;
-      letter-spacing: .15em;
-      text-transform: uppercase;
-      padding: 5px 18px;
-      border-radius: 100px;
-      white-space: nowrap;
-    }
-
-    /* ── Scrollbar hide ── */
-    .no-scrollbar::-webkit-scrollbar { display: none; }
-
-    /* ── Footer ── */
-    .footer-grid {
-      display: grid;
-      grid-template-columns: 1fr auto 1fr;
-      align-items: center;
-      gap: 32px;
-    }
-    @media(max-width: 768px) {
-      .footer-grid { grid-template-columns: 1fr; text-align: center; }
-    }
-
-    /* ── Hero headline ── */
-    h1.hero-title {
-      font-family: 'Outfit', sans-serif;
-      font-weight: 600;
-      font-size: clamp(40px, 5.5vw, 72px);
-      line-height: 1.05;
-      letter-spacing: -.025em;
-      color: var(--ink);
-    }
-
-    h2.section-title {
-      font-family: 'Outfit', sans-serif;
-      font-weight: 600;
-      font-size: clamp(30px, 3.5vw, 50px);
-      line-height: 1.1;
-      letter-spacing: -.02em;
-    }
-
-    /* ── Noise overlay ── */
-    .noise::after {
-      content: '';
-      position: absolute;
-      inset: 0;
-      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.03'/%3E%3C/svg%3E");
-      pointer-events: none;
-      z-index: 0;
-    }
-  `}</style>
-);
-
-/* ─── Scroll Reveal Hook ─────────────────────────────────────────── */
-function useReveal() {
-  useEffect(() => {
-    const els = document.querySelectorAll(".reveal");
-    const io = new IntersectionObserver(
-      (entries) => entries.forEach((e) => { if (e.isIntersecting) e.target.classList.add("visible"); }),
-      { threshold: 0.12 }
-    );
-    els.forEach((el) => io.observe(el));
-    return () => io.disconnect();
-  }, []);
-}
-
-/* ─── Animated Counter ───────────────────────────────────────────── */
-function AnimatedCounter({ target, suffix = "" }: { target: string; suffix?: string }) {
-  const [value, setValue] = useState(0);
-  const ref = useRef(null);
-  const started = useRef(false);
-
-  useEffect(() => {
-    const el = ref.current;
-    if (!el) return;
-    const io = new IntersectionObserver(([entry]) => {
-      if (entry.isIntersecting && !started.current) {
-        started.current = true;
-        let start = 0;
-        const num = parseInt(target.replace(/\D/g, ""), 10);
-        const step = Math.max(1, Math.floor(num / 40));
-        const timer = setInterval(() => {
-          start = Math.min(start + step, num);
-          setValue(start);
-          if (start >= num) clearInterval(timer);
-        }, 30);
-      }
-    }, { threshold: 0.5 });
-    io.observe(el);
-    return () => io.disconnect();
-  }, [target]);
-
-  const display = target.includes("+") ? `+${value}` : target.includes("%") ? `${value}%` : `${value}`;
-  return <span ref={ref} className="stat-num">{display}{suffix}</span>;
-}
-
-/* ─── Live Queue Widget ──────────────────────────────────────────── */
-function LiveQueueWidget() {
-  const [queue, setQueue] = useState([
-    { id: "A001", status: "attending", wait: 0 },
-    { id: "A002", status: "waiting", wait: 3 },
-    { id: "A003", status: "waiting", wait: 8 },
-    { id: "A004", status: "waiting", wait: 14 },
-  ]);
-  const [callEffect, setCallEffect] = useState(false);
-
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setQueue(prev => {
-        const next = [...prev];
-        // promote first waiting to attending, push a new one
-        const firstWaiting = next.findIndex(q => q.status === "waiting");
-        if (firstWaiting !== -1) {
-          next[0] = { ...next[firstWaiting], status: "attending", wait: 0 };
-          next.splice(firstWaiting, 1);
-        }
-        const lastId = parseInt(next[next.length - 1]?.id.replace("A", "") || "4");
-        next.push({ id: `A${String(lastId + 1).padStart(3, "0")}`, status: "waiting", wait: (next.length) * 5 });
-        return next.slice(0, 4);
-      });
-      setCallEffect(true);
-      setTimeout(() => setCallEffect(false), 800);
-    }, 3000);
-    return () => clearInterval(interval);
-  }, []);
-
-  return (
-    <div className="queue-widget">
-      {/* Header */}
-      <div style={{ background: "var(--ink)", padding: "16px 20px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-          <div style={{ width: 8, height: 8, borderRadius: "50%", background: "#22C55E", position: "relative" }}>
-            <div className="ping" style={{ position: "absolute", inset: 0, borderRadius: "50%", background: "#22C55E", opacity: .4 }}></div>
-          </div>
-          <span style={{ fontFamily: "'Outfit', sans-serif", fontSize: 13, fontWeight: 600, color: "#fff", letterSpacing: ".06em" }}>NEXT LIVE</span>
-        </div>
-        <span style={{ fontSize: 11, color: "#6B7280", fontWeight: 600 }}>Balcão 2 · Aberto</span>
-      </div>
-
-      {/* Now serving */}
-      <div style={{
-        padding: "20px",
-        background: callEffect ? "rgba(43,93,224,.06)" : "var(--blue-light)",
-        borderBottom: "1px solid var(--border)",
-        transition: "background .4s"
-      }}>
-        <div style={{ fontSize: 10, fontWeight: 600, letterSpacing: ".12em", textTransform: "uppercase", color: "var(--blue)", marginBottom: 6 }}>
-          EM ATENDIMENTO
-        </div>
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-          <span style={{ fontFamily: "'Outfit', sans-serif", fontSize: 36, fontWeight: 600, color: "var(--blue)" }}>
-            {queue[0]?.id}
-          </span>
-          <div style={{
-            background: "var(--blue)", color: "#fff", borderRadius: 10,
-            padding: "6px 12px", fontSize: 11, fontWeight: 600, letterSpacing: ".06em"
-          }}>
-            BALCÃO 2
-          </div>
-        </div>
-      </div>
-
-      {/* Queue list */}
-      <div style={{ padding: "12px 0" }}>
-        {queue.slice(1).map((item, i) => (
-          <div key={item.id} style={{
-            display: "flex", alignItems: "center", justifyContent: "space-between",
-            padding: "10px 20px",
-            background: i === 0 ? "var(--surface)" : "transparent",
-            borderLeft: i === 0 ? "3px solid var(--blue)" : "3px solid transparent",
-            transition: "all .4s"
-          }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-              <div style={{
-                width: 32, height: 32, borderRadius: "50%",
-                background: i === 0 ? "var(--blue-light)" : "#F3F4F6",
-                display: "flex", alignItems: "center", justifyContent: "center",
-                fontSize: 12, fontWeight: 600, color: i === 0 ? "var(--blue)" : "var(--muted)"
-              }}>
-                {i + 1}
-              </div>
-              <span style={{ fontFamily: "'Outfit', sans-serif", fontWeight: 600, fontSize: 15, color: "var(--ink)" }}>{item.id}</span>
-            </div>
-            <span style={{ fontSize: 11, color: "var(--muted)", fontWeight: 500 }}>~{item.wait} min</span>
-          </div>
-        ))}
-      </div>
-
-      {/* Footer */}
-      <div style={{ padding: "12px 20px", background: "var(--surface)", borderTop: "1px solid var(--border)", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-        <span style={{ fontSize: 11, color: "var(--muted)", fontWeight: 500 }}>3 pessoas aguardam</span>
-        <div style={{ display: "flex", gap: 4 }}>
-          {[...Array(3)].map((_, i) => (
-            <div key={i} className="qpulse" style={{ width: 6, height: 6, borderRadius: "50%", background: "var(--blue)", animationDelay: `${i * .3}s` }}></div>
-          ))}
-        </div>
-      </div>
-    </div>
-  );
-}
-
-/* ─── Main Component ─────────────────────────────────────────────── */
 export default function LandingPage() {
-  useReveal();
-
   const whatsappNumber = "244956821719";
   const supportEmail = "dsousa.capital.ao+next@gmail.com";
 
   const plans = [
     {
       name: "Mensal",
-      price: "5.000",
-      currency: "Kz",
-      period: "por mês",
-      features: ["Senhas Ilimitadas", "Dashboard em Tempo Real", "Suporte via Email", "Até 3 Balcões"],
+      price: "5.000 Kz",
+      period: "/mês",
+      features: ["Senhas Ilimitadas", "Dashboard Real-time", "Suporte Email"],
       subject: "Plano Mensal - NEXT"
     },
     {
       name: "Anual",
-      price: "50.000",
-      currency: "Kz",
-      period: "por ano",
-      badge: "MAIS POPULAR",
-      features: ["Tudo do Mensal", "2 Meses Grátis", "Suporte Prioritário", "Balcões Ilimitados", "Relatórios Mensais"],
+      price: "50.000 Kz",
+      period: "/ano",
+      features: ["Tudo do Mensal", "Bónus: 2 meses grátis", "Prioridade total", "Relatórios Mensais"],
       highlight: true,
       subject: "Plano Anual - NEXT"
     }
   ];
 
   const steps = [
-    { icon: <Smartphone size={22} />, num: "01", title: "Check-in via QR", desc: "O cliente escaneia o código e entra na fila instantaneamente, sem papel." },
-    { icon: <Bell size={22} />, num: "02", title: "Espera Livre", desc: "Notificações automáticas avisam quando está quase na vez." },
-    { icon: <BarChart3 size={22} />, num: "03", title: "Analytics ao Vivo", desc: "Dashboards em tempo real com métricas de performance da equipa." }
-  ];
-
-  const reasons = [
-    { icon: <Zap size={20} />, t: "Alta Performance", d: "Zero latência mesmo com milhares de acessos simultâneos." },
-    { icon: <ShieldCheck size={20} />, t: "Segurança Total", d: "Encriptação de ponta que protege todos os dados dos seus clientes." },
-    { icon: <Clock size={20} />, t: "+40% Retenção", d: "Reduza o abandono de fila com uma espera confortável e previsível." }
+    {
+      icon: <Smartphone size={26} />,
+      title: "Check-in Digital",
+      desc: "Entrada imediata via QR Code. O fim das senhas de papel e do desperdício no seu negócio."
+    },
+    {
+      icon: <Bell size={26} />,
+      title: "Fila Virtual",
+      desc: "Liberdade para o cliente aguardar onde quiser, recebendo alertas automáticos no telemóvel."
+    },
+    {
+      icon: <BarChart3 size={26} />,
+      title: "Analytics",
+      desc: "Dados precisos sobre tempo de espera e performance da equipa em tempo real."
+    }
   ];
 
   return (
-    <div style={{ minHeight: "100vh", overflowX: "hidden" }}>
-      <GlobalStyles />
+    <div style={{ minHeight: '100vh', background: '#fff', color: '#0f172a', overflowX: 'hidden', fontFamily: "'Plus Jakarta Sans', sans-serif" }}>
 
-      {/* ── NAV ───────────────────────────────────────────────────── */}
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap');
+
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+        html { scroll-behavior: smooth; }
+
+        @keyframes marquee {
+          from { transform: translateX(0); }
+          to   { transform: translateX(-50%); }
+        }
+        @keyframes float {
+          0%,100% { transform: translateY(0px) rotate(1.5deg); }
+          50%      { transform: translateY(-18px) rotate(-0.5deg); }
+        }
+        @keyframes fadeUp {
+          from { opacity: 0; transform: translateY(24px); }
+          to   { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes ping {
+          75%, 100% { transform: scale(1.8); opacity: 0; }
+        }
+
+        .marquee-track {
+          display: flex;
+          width: max-content;
+          animation: marquee 32s linear infinite;
+        }
+        .marquee-track:hover { animation-play-state: paused; }
+
+        .float { animation: float 5s ease-in-out infinite; }
+
+        .fade-up { animation: fadeUp .6s cubic-bezier(.16,1,.3,1) both; }
+        .fade-up-1 { animation-delay: .1s; }
+        .fade-up-2 { animation-delay: .2s; }
+        .fade-up-3 { animation-delay: .3s; }
+        .fade-up-4 { animation-delay: .4s; }
+
+        .hover-lift { transition: transform .3s ease, box-shadow .3s ease; }
+        .hover-lift:hover { transform: translateY(-5px); }
+
+        .plan-card { transition: transform .35s cubic-bezier(.16,1,.3,1); }
+        .plan-card:hover { transform: translateY(-6px); }
+
+        .feature-icon { transition: background .25s, color .25s; }
+        .feature-row:hover .feature-icon {
+          background: #2b5de0 !important;
+          color: #fff !important;
+        }
+
+        .cta-btn {
+          transition: background .2s, transform .2s, box-shadow .2s;
+        }
+        .cta-btn:hover {
+          background: #1e46b3 !important;
+          transform: scale(1.03);
+          box-shadow: 0 20px 48px rgba(43,93,224,.35) !important;
+        }
+        .cta-btn:active { transform: scale(.97); }
+
+        .nav-link {
+          font-size: 12px; font-weight: 700; letter-spacing: .08em;
+          text-transform: uppercase; color: #64748b;
+          text-decoration: none; transition: color .2s;
+        }
+        .nav-link:hover { color: #2b5de0; }
+
+        .contact-card {
+          transition: border-color .2s, color .2s;
+        }
+        .contact-card:hover { border-color: #2b5de0 !important; color: #2b5de0 !important; }
+
+        .footer-link {
+          font-size: 11px; font-weight: 700; letter-spacing: .12em;
+          text-transform: uppercase; color: #475569;
+          text-decoration: none; transition: color .2s;
+        }
+        .footer-link:hover { color: #fff; }
+
+        ::-webkit-scrollbar { width: 5px; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+      `}</style>
+
+      {/* ── NAV ── */}
       <nav style={{
-        position: "sticky", top: 0, zIndex: 50,
-        display: "flex", justifyContent: "space-between", alignItems: "center",
-        padding: "0 40px", height: 68,
-        background: "rgba(255,255,255,.88)",
-        backdropFilter: "blur(16px)",
-        borderBottom: "1px solid var(--border)",
+        position: 'sticky', top: 0, zIndex: 50,
+        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+        padding: '0 40px', height: 64,
+        background: 'rgba(241,243,245,.95)',
+        backdropFilter: 'blur(14px)',
+        borderBottom: '1px solid #e2e8f0',
       }}>
-        <div style={{ fontFamily: "'Outfit', sans-serif", fontSize: 24, fontWeight: 600, letterSpacing: "-.02em" }}>
-          NEXT<span style={{ color: "var(--blue)" }}>.</span>
+        <div style={{ fontFamily: "'Outfit', sans-serif", fontSize: 22, fontWeight: 800, letterSpacing: '-.02em', fontStyle: 'italic' }}>
+          NEXT<span style={{ color: '#2b5de0' }}>.</span>
         </div>
-        <div style={{ display: "flex", alignItems: "center", gap: 32 }}>
-          <a href="#como-funciona" className="nav-link">Como Funciona</a>
-          <a href="#pricing" className="nav-link">Preços</a>
-          <a href="/login" style={{
-            padding: "10px 22px", background: "var(--ink)", color: "#fff",
-            borderRadius: 12, fontFamily: "'Outfit', sans-serif",
-            fontWeight: 600, fontSize: 13, letterSpacing: ".05em", textDecoration: "none",
-            transition: "background .2s, transform .2s"
-          }}
-          onMouseEnter={e => (e.currentTarget as HTMLAnchorElement).style.background = "#333"}
-          onMouseLeave={e => (e.currentTarget as HTMLAnchorElement).style.background = "var(--ink)"}
-          >
-            Login
-          </a>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 32 }}>
+          <a href="#saber-mais" className="nav-link">Saber Mais</a>
+          <a href="#pricing" className="nav-link">Pricing</a>
+          <Link href="/login" style={{
+            padding: '9px 22px', background: '#0f172a', color: '#fff',
+            borderRadius: 10, fontFamily: "'Outfit', sans-serif",
+            fontWeight: 700, fontSize: 13, letterSpacing: '.04em',
+            textDecoration: 'none', transition: 'background .2s'
+          }}>Login</Link>
         </div>
       </nav>
 
-      {/* ── HERO ──────────────────────────────────────────────────── */}
-      <section className="mesh-bg" style={{ padding: "80px 40px 100px", maxWidth: 1200, margin: "0 auto" }}>
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 48, flexWrap: "wrap" }}>
+      {/* ── HERO ── */}
+      <section style={{ maxWidth: 1200, margin: '0 auto', padding: '80px 40px 100px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 48, flexWrap: 'wrap' }}>
 
           {/* Left */}
-          <div style={{ flex: "1 1 480px", maxWidth: 600 }}>
-            <div className="reveal section-tag">
-              <span style={{ width: 6, height: 6, borderRadius: "50%", background: "var(--blue)", display: "inline-block" }}></span>
-              Gestão de Filas · Angola
+          <div className="fade-up" style={{ flex: '1 1 480px', maxWidth: 580 }}>
+
+            {/* Tag */}
+            <div style={{
+              display: 'inline-flex', alignItems: 'center', gap: 8,
+              padding: '5px 14px', borderRadius: 100,
+              background: '#eef2fd', color: '#2b5de0',
+              fontSize: 11, fontWeight: 700, letterSpacing: '.1em', textTransform: 'uppercase',
+              marginBottom: 28
+            }}>
+              <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#2b5de0', display: 'inline-block' }} />
+              Sistema de Gestão de Filas · Angola
             </div>
 
-            <h1 className="hero-title reveal reveal-delay-1" style={{ marginBottom: 8 }}>
-              O TEMPO É O ACTIVO
-            </h1>
-            <h1 className="hero-title reveal reveal-delay-2" style={{ color: "var(--blue)", marginBottom: 28 }}>
-              MAIS PRECIOSO.
+            {/* Headline */}
+            <h1 className="fade-up fade-up-1" style={{
+              fontFamily: "'Outfit', sans-serif",
+              fontSize: 'clamp(44px, 6vw, 76px)',
+              fontWeight: 800, lineHeight: 1.0,
+              letterSpacing: '-.025em', color: '#0f172a',
+              textTransform: 'uppercase', marginBottom: 24
+            }}>
+              O TEMPO É O<br />
+              <span style={{ color: '#2b5de0' }}>ACTIVO MAIS<br />PRECIOSO.</span>
             </h1>
 
-            <p className="reveal reveal-delay-3" style={{
-              fontSize: 19, lineHeight: 1.65, color: "var(--muted)",
-              fontWeight: 400, maxWidth: 460, marginBottom: 44,
-              borderLeft: "3px solid var(--blue)", paddingLeft: 20
+            {/* Desc */}
+            <p className="fade-up fade-up-2" style={{
+              fontSize: 18, lineHeight: 1.7, color: '#64748b',
+              fontStyle: 'italic', fontWeight: 400,
+              borderLeft: '3px solid #2b5de0', paddingLeft: 20,
+              maxWidth: 460, marginBottom: 40
             }}>
-              Transforme a espera em experiência. O NEXT digitaliza as filas do seu negócio com inteligência e elegância.
+              Transforme a espera em uma experiência de luxo. A NEXT organiza suas filas com inteligência.
             </p>
 
-            <div className="reveal reveal-delay-4" style={{ display: "flex", gap: 16, flexWrap: "wrap" }}>
+            {/* CTA */}
+            <div className="fade-up fade-up-3">
               <a
                 href={`https://wa.me/${whatsappNumber}?text=Olá! Gostaria de implementar o NEXT no meu negócio.`}
                 target="_blank" rel="noopener noreferrer"
-                className="btn-primary"
+                className="cta-btn"
+                style={{
+                  display: 'inline-flex', alignItems: 'center', gap: 12,
+                  padding: '18px 40px',
+                  background: '#2b5de0', color: '#fff',
+                  borderRadius: 16, fontFamily: "'Outfit', sans-serif",
+                  fontWeight: 800, fontSize: 14,
+                  letterSpacing: '.12em', textTransform: 'uppercase',
+                  textDecoration: 'none',
+                  boxShadow: '0 12px 40px rgba(43,93,224,.28)'
+                }}
               >
                 <MessageCircle size={20} />
                 Começar Agora
               </a>
-              <a href="#como-funciona" className="btn-ghost">
-                Ver Demo
-                <ChevronRight size={16} />
-              </a>
-            </div>
-
-            {/* Trust bar */}
-            <div className="reveal reveal-delay-4" style={{
-              display: "flex", alignItems: "center", gap: 24, marginTop: 44,
-              paddingTop: 32, borderTop: "1px solid var(--border)"
-            }}>
-              {[["50+", "Empresas"], ["60%", "Menos Espera"], ["100%", "Uptime"]].map(([n, l]) => (
-                <div key={l} style={{ textAlign: "center" }}>
-                  <div style={{ fontFamily: "'Outfit', sans-serif", fontSize: 22, fontWeight: 600, color: "var(--ink)" }}>{n}</div>
-                  <div style={{ fontSize: 11, color: "var(--muted)", fontWeight: 600, letterSpacing: ".08em", textTransform: "uppercase" }}>{l}</div>
-                </div>
-              ))}
             </div>
           </div>
 
-          {/* Right — Phone + Live Widget */}
-          <div className="reveal reveal-delay-2" style={{ flex: "1 1 420px", display: "flex", alignItems: "flex-end", justifyContent: "center", gap: 20, position: "relative" }}>
-            {/* Glow */}
+          {/* Right — phone */}
+          <div className="fade-up fade-up-2" style={{ flex: '1 1 340px', display: 'flex', justifyContent: 'center', position: 'relative' }}>
             <div style={{
-              position: "absolute", inset: -40,
-              background: "radial-gradient(ellipse 70% 60% at 60% 40%, rgba(43,93,224,.12) 0%, transparent 70%)",
-              pointerEvents: "none", zIndex: 0
-            }}></div>
-
-            {/* Phone */}
-            <div className="float" style={{ position: "relative", zIndex: 1, maxWidth: 200 }}>
+              position: 'absolute', inset: -60,
+              background: 'radial-gradient(ellipse 70% 60% at 55% 50%, rgba(43,93,224,.1) 0%, transparent 70%)',
+              pointerEvents: 'none'
+            }} />
+            <div className="float" style={{ position: 'relative', maxWidth: 360 }}>
               <img
                 src="/telefone.png"
                 alt="NEXT Mobile App"
-                style={{ width: "100%", height: "auto", filter: "drop-shadow(0 32px 48px rgba(43,93,224,.20))" }}
+                style={{ width: '100%', height: 'auto', filter: 'drop-shadow(0 36px 48px rgba(43,93,224,.22))' }}
               />
-            </div>
-
-            {/* Live Queue Widget */}
-            <div style={{ position: "relative", zIndex: 1, paddingBottom: 16 }}>
-              <div className="float" style={{ animationDelay: ".6s" }}>
-                <LiveQueueWidget />
-              </div>
-              {/* Active badge */}
+              {/* Badge */}
               <div style={{
-                position: "absolute", bottom: -4, left: "50%", transform: "translateX(-50%)",
-                background: "#fff", padding: "8px 16px",
-                borderRadius: 100, boxShadow: "0 4px 20px rgba(0,0,0,.08)",
-                border: "1px solid var(--border)",
-                display: "flex", alignItems: "center", gap: 8, whiteSpace: "nowrap"
+                position: 'absolute', top: '38%', right: -48,
+                background: '#fff', padding: '14px 18px',
+                borderRadius: 18, boxShadow: '0 12px 40px rgba(0,0,0,.12)',
+                border: '1px solid #e2e8f0',
+                display: 'flex', alignItems: 'center', gap: 12,
+                animation: 'fadeUp .8s .5s both'
               }}>
-                <div style={{ width: 8, height: 8, borderRadius: "50%", background: "#22C55E", position: "relative" }}>
-                  <div className="ping" style={{ position: "absolute", inset: 0, borderRadius: "50%", background: "#22C55E", opacity: .4 }}></div>
-                </div>
-                <span style={{ fontSize: 11, fontWeight: 600, color: "var(--ink)" }}>Sistema Activo</span>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* ── MARQUEE ───────────────────────────────────────────────── */}
-      <section style={{ padding: "28px 0", background: "var(--ink)", overflow: "hidden", borderTop: "1px solid #1c2033" }}>
-        <div className="marquee-track">
-          {[1, 2].map(loop => (
-            <div key={loop} style={{ display: "flex", gap: 0 }}>
-              {["Filas Digitais", "Dashboard Real-time", "QR Code Check-in", "Analytics Precisos", "Suporte Premium", "Escalabilidade Total", "Notificações Auto", "Zero Papel"].map((t, i) => (
-                <div key={i} style={{ display: "flex", alignItems: "center", gap: 0 }}>
-                  <span style={{
-                    padding: "0 36px",
-                    fontFamily: "'Outfit', sans-serif", fontWeight: 600,
-                    fontSize: 13, letterSpacing: ".1em", textTransform: "uppercase",
-                    color: i % 2 === 0 ? "#fff" : "var(--blue)",
-                    whiteSpace: "nowrap"
-                  }}>{t}</span>
-                  <span style={{ color: "#333", fontSize: 18 }}>·</span>
-                </div>
-              ))}
-            </div>
-          ))}
-        </div>
-      </section>
-
-      {/* ── STATS ─────────────────────────────────────────────────── */}
-      <section style={{ padding: "100px 40px", maxWidth: 1100, margin: "0 auto" }}>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 48 }}>
-          {[
-            { val: "60%", label: "Redução no Tempo de Espera", icon: <Zap size={24} />, suffix: "" },
-            { val: "50", label: "Empresas Activas em Angola", icon: <Users size={24} />, suffix: "+" },
-            { val: "100", label: "Controlo Operacional Total", icon: <BarChart3 size={24} />, suffix: "%" },
-          ].map((s, i) => (
-            <div key={i} className={`reveal reveal-delay-${i + 1}`} style={{ textAlign: "center" }}>
-              <div style={{
-                width: 52, height: 52, borderRadius: 16,
-                background: "var(--blue-light)", color: "var(--blue)",
-                display: "flex", alignItems: "center", justifyContent: "center",
-                margin: "0 auto 20px"
-              }}>
-                {s.icon}
-              </div>
-              <AnimatedCounter target={s.val} />
-              <div style={{ marginTop: 4, fontSize: 11, fontWeight: 600, letterSpacing: ".1em", textTransform: "uppercase", color: "var(--muted)" }}>
-                {s.label}
-              </div>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      {/* ── COMO FUNCIONA ─────────────────────────────────────────── */}
-      <section id="como-funciona" style={{ background: "var(--surface)", padding: "100px 40px", borderTop: "1px solid var(--border)", borderBottom: "1px solid var(--border)" }}>
-        <div style={{ maxWidth: 1100, margin: "0 auto" }}>
-          <div className="reveal" style={{ textAlign: "center", marginBottom: 72 }}>
-            <div className="section-tag" style={{ justifyContent: "center" }}>
-              <span style={{ width: 6, height: 6, borderRadius: "50%", background: "var(--blue)", display: "inline-block" }}></span>
-              Como Funciona
-            </div>
-            <h2 className="section-title">Simples para o cliente.<br /><span style={{ color: "var(--blue)" }}>Poderoso para si.</span></h2>
-          </div>
-
-          {/* Steps */}
-          <div style={{ display: "flex", alignItems: "flex-start", gap: 24, flexWrap: "wrap", justifyContent: "center" }}>
-            {steps.map((step, i) => (
-              <React.Fragment key={i}>
-                <div className={`reveal reveal-delay-${i + 1} card-hover`} style={{
-                  flex: "1 1 260px", maxWidth: 320,
-                  background: "#fff", border: "1px solid var(--border)",
-                  borderRadius: 24, padding: "40px 32px",
-                  position: "relative", overflow: "hidden"
-                }}>
-                  {/* Step number bg */}
-                  <div style={{
-                    position: "absolute", top: -16, right: -8,
-                    fontFamily: "'Outfit', sans-serif", fontSize: 96, fontWeight: 600,
-                    color: "var(--blue-light)", lineHeight: 1, userSelect: "none"
-                  }}>{step.num}</div>
-
-                  <div style={{
-                    width: 48, height: 48, borderRadius: 14,
-                    background: "var(--blue)", color: "#fff",
-                    display: "flex", alignItems: "center", justifyContent: "center",
-                    marginBottom: 24, position: "relative", zIndex: 1
-                  }}>
-                    {step.icon}
-                  </div>
-                  <h3 style={{
-                    fontFamily: "'Outfit', sans-serif", fontSize: 18, fontWeight: 600,
-                    marginBottom: 12, position: "relative", zIndex: 1
-                  }}>{step.title}</h3>
-                  <p style={{ fontSize: 14, color: "var(--muted)", lineHeight: 1.65, position: "relative", zIndex: 1 }}>{step.desc}</p>
-                </div>
-
-                {i < steps.length - 1 && (
-                  <div style={{ display: "flex", alignItems: "center", paddingTop: 24 }}>
-                    <ArrowRight size={24} color="var(--border)" />
-                  </div>
-                )}
-              </React.Fragment>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ── PORQUÊ NEXT ───────────────────────────────────────────── */}
-      <section style={{ padding: "100px 40px", maxWidth: 1100, margin: "0 auto" }}>
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 80, alignItems: "center", flexWrap: "wrap" }}>
-
-          {/* Left */}
-          <div className="reveal">
-            <div className="section-tag">
-              <span style={{ width: 6, height: 6, borderRadius: "50%", background: "var(--blue)", display: "inline-block" }}></span>
-              Porquê Escolher
-            </div>
-            <h2 className="section-title" style={{ marginBottom: 48 }}>
-              Eficiência que gera<br /><span style={{ color: "var(--blue)" }}>faturação.</span>
-            </h2>
-
-            <div style={{ display: "flex", flexDirection: "column", gap: 32 }}>
-              {reasons.map((r, i) => (
-                <div key={i} className={`reveal reveal-delay-${i + 1}`} style={{ display: "flex", gap: 20, alignItems: "flex-start" }}>
-                  <div style={{
-                    width: 44, height: 44, borderRadius: 12, flexShrink: 0,
-                    background: "var(--blue-light)", color: "var(--blue)",
-                    display: "flex", alignItems: "center", justifyContent: "center",
-                    transition: "background .2s, color .2s", cursor: "default"
-                  }}
-                  onMouseEnter={(e: React.MouseEvent<HTMLElement>) => { (e.currentTarget as HTMLElement).style.background = "var(--blue)"; e.currentTarget.style.color = "#fff"; }}
-                  onMouseLeave={(e: React.MouseEvent<HTMLElement>) => { (e.currentTarget as HTMLElement).style.background = "var(--blue-light)"; e.currentTarget.style.color = "var(--blue)"; }}
-                  >
-                    {r.icon}
-                  </div>
-                  <div>
-                    <div style={{ fontFamily: "'Outfit', sans-serif", fontWeight: 600, fontSize: 16, marginBottom: 4 }}>{r.t}</div>
-                    <div style={{ fontSize: 14, color: "var(--muted)", lineHeight: 1.6 }}>{r.d}</div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Right — Stat Card */}
-          <div className="reveal reveal-delay-2">
-            <div style={{
-              background: "var(--ink)", borderRadius: 32, padding: "52px 48px",
-              color: "#fff", position: "relative", overflow: "hidden"
-            }}>
-              {/* Deco */}
-              <div style={{
-                position: "absolute", top: -60, right: -60,
-                width: 220, height: 220, borderRadius: "50%",
-                background: "radial-gradient(circle, rgba(43,93,224,.25) 0%, transparent 70%)"
-              }}></div>
-              <div style={{
-                position: "absolute", bottom: -40, left: -40,
-                width: 160, height: 160, borderRadius: "50%",
-                background: "radial-gradient(circle, rgba(43,93,224,.12) 0%, transparent 70%)"
-              }}></div>
-
-              <div style={{ position: "relative", zIndex: 1 }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 32 }}>
-                  <div style={{ width: 32, height: 2, background: "var(--blue)", borderRadius: 2 }}></div>
-                  <span style={{ fontSize: 10, letterSpacing: ".2em", textTransform: "uppercase", color: "#6B7280", fontWeight: 600 }}>Dado de Mercado</span>
-                </div>
-
-                <p style={{
-                  fontFamily: "'Outfit', sans-serif", fontSize: 28, fontWeight: 600,
-                  lineHeight: 1.3, marginBottom: 32
-                }}>
-                  "70% dos clientes <span style={{ color: "var(--blue)", fontStyle: "italic" }}>abandonam</span> quando a fila parece desorganizada."
-                </p>
-
                 <div style={{
-                  padding: "20px 0", borderTop: "1px solid rgba(255,255,255,.08)",
-                  display: "flex", alignItems: "center", gap: 16
+                  width: 32, height: 32, background: '#22c55e',
+                  borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  flexShrink: 0, position: 'relative'
                 }}>
+                  <Check size={14} color="#fff" strokeWidth={3} />
                   <div style={{
-                    width: 40, height: 40, borderRadius: 10,
-                    background: "rgba(43,93,224,.15)", color: "var(--blue)",
-                    display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0
-                  }}>
-                    <Users size={20} />
-                  </div>
-                  <p style={{ fontSize: 12, color: "#6B7280", lineHeight: 1.5 }}>
-                    Baseado em estudos de comportamento do consumidor em retalho.
+                    position: 'absolute', inset: 0, borderRadius: '50%',
+                    background: '#22c55e', opacity: .3,
+                    animation: 'ping 1.8s cubic-bezier(0,0,.2,1) infinite'
+                  }} />
+                </div>
+                <div>
+                  <p style={{ fontSize: 11, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '.06em', color: '#0f172a' }}>
+                    VEZ DO CLIENTE #004
                   </p>
+                  <p style={{ fontSize: 10, color: '#94a3b8', fontWeight: 500, marginTop: 2 }}>Próximo na Fila</p>
                 </div>
               </div>
             </div>
@@ -748,65 +266,116 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* ── PRICING ───────────────────────────────────────────────── */}
-      <section id="pricing" style={{ background: "var(--surface)", padding: "100px 40px", borderTop: "1px solid var(--border)" }}>
-        <div style={{ maxWidth: 900, margin: "0 auto" }}>
-          <div className="reveal" style={{ textAlign: "center", marginBottom: 64 }}>
-            <div className="section-tag" style={{ justifyContent: "center" }}>
-              <span style={{ width: 6, height: 6, borderRadius: "50%", background: "var(--blue)", display: "inline-block" }}></span>
-              Planos
+      {/* ── MARQUEE ── */}
+      <section style={{ padding: '0', background: '#f8fafc', borderTop: '1px solid #e2e8f0', borderBottom: '1px solid #e2e8f0', overflow: 'hidden' }}>
+        <div className="marquee-track" style={{ padding: '32px 0', gap: 0 }}>
+          {[1, 2].map(loop => (
+            <div key={loop} style={{ display: 'flex', gap: 24, paddingRight: 24 }}>
+              {[
+                { bg: '#2b5de0', icon: <Clock size={36} color="#fff" />, title: 'Filas Digitais', desc: 'O seu cliente solicita a senha via QR Code e acompanha tudo pelo telemóvel.', light: true },
+                { bg: '#0f172a', icon: <ShieldCheck size={36} color="#2b5de0" />, title: 'Gestão Premium', desc: 'Dashboard ultra-rápido para chamar e gerir atendimentos.', light: false },
+                { bg: '#2b5de0', icon: <Rocket size={36} color="#fff" />, title: 'Escalabilidade', desc: 'Desde pequenas boutiques a grandes centros, o NEXT adapta-se ao seu fluxo.', light: true },
+              ].map((card, i) => (
+                <div key={i} style={{
+                  width: 320, flexShrink: 0,
+                  background: card.bg, borderRadius: 28,
+                  padding: '36px 32px',
+                  boxShadow: '0 8px 32px rgba(0,0,0,.08)'
+                }}>
+                  <div style={{ marginBottom: 20 }}>{card.icon}</div>
+                  <h3 style={{
+                    fontFamily: "'Outfit', sans-serif", fontSize: 18, fontWeight: 700,
+                    textTransform: 'uppercase', color: '#fff', marginBottom: 12, letterSpacing: '-.01em'
+                  }}>{card.title}</h3>
+                  <p style={{ fontSize: 13, lineHeight: 1.65, color: card.light ? 'rgba(255,255,255,.75)' : '#64748b', fontWeight: 400 }}>{card.desc}</p>
+                </div>
+              ))}
             </div>
-            <h2 className="section-title">Preços <span style={{ color: "var(--blue)" }}>transparentes.</span></h2>
-            <p style={{ marginTop: 16, fontSize: 17, color: "var(--muted)" }}>Sem surpresas. Sem letras pequenas.</p>
+          ))}
+        </div>
+      </section>
+
+      {/* ── SOCIAL PROOF ── */}
+      <section style={{ padding: '100px 40px', maxWidth: 1100, margin: '0 auto' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 48, textAlign: 'center' }}>
+          {[
+            { icon: <Zap size={28} />, num: '60%', label: 'Mais Velocidade', desc: 'Redução direta no tempo médio de espera.' },
+            { icon: <Users size={28} />, num: '+50', label: 'Clientes Felizes', desc: 'Empresas que confiam na nossa tecnologia.' },
+            { icon: <BarChart3 size={28} />, num: '100%', label: 'Controlo Total', desc: 'Relatórios precisos sobre a sua equipa.' },
+          ].map((s, i) => (
+            <div key={i} className="fade-up" style={{ animationDelay: `${i * .1}s` }}>
+              <div style={{
+                width: 60, height: 60, borderRadius: '50%',
+                background: '#eef2fd', color: '#2b5de0',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                margin: '0 auto 20px'
+              }}>{s.icon}</div>
+              <div style={{ fontFamily: "'Outfit', sans-serif", fontSize: 44, fontWeight: 800, color: '#0f172a', lineHeight: 1 }}>{s.num}</div>
+              <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: '.12em', textTransform: 'uppercase', color: '#94a3b8', margin: '8px 0 12px' }}>{s.label}</div>
+              <p style={{ fontSize: 13, color: '#94a3b8', lineHeight: 1.6 }}>{s.desc}</p>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* ── PRICING ── */}
+      <section id="pricing" style={{ background: '#f8fafc', borderTop: '1px solid #e2e8f0', borderBottom: '1px solid #e2e8f0', padding: '96px 40px' }}>
+        <div style={{ maxWidth: 860, margin: '0 auto' }}>
+          <div style={{ textAlign: 'center', marginBottom: 56 }}>
+            <h2 style={{ fontFamily: "'Outfit', sans-serif", fontSize: 'clamp(32px, 4vw, 52px)', fontWeight: 800, letterSpacing: '-.02em', textTransform: 'uppercase', color: '#0f172a', marginBottom: 12 }}>
+              Planos <span style={{ color: '#2b5de0' }}>Simples.</span>
+            </h2>
+            <p style={{ fontSize: 16, color: '#64748b', fontWeight: 500 }}>A transparência que o seu negócio merece.</p>
           </div>
 
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))", gap: 28 }}>
-            {plans.map((plan, i) => (
-              <div key={plan.name} className={`reveal reveal-delay-${i + 1}`} style={{
-                background: plan.highlight ? "var(--blue)" : "#fff",
-                border: plan.highlight ? "none" : "1px solid var(--border)",
-                borderRadius: 28, padding: "44px 40px",
-                position: "relative",
-                boxShadow: plan.highlight ? "0 24px 64px rgba(43,93,224,.30)" : "0 4px 20px rgba(0,0,0,.05)",
-                transition: "transform .35s cubic-bezier(.16,1,.3,1)",
-                cursor: "default"
-              }}
-              onMouseEnter={(e: React.MouseEvent<HTMLElement>) => (e.currentTarget as HTMLElement).style.transform = "translateY(-6px)"}
-              onMouseLeave={(e: React.MouseEvent<HTMLElement>) => (e.currentTarget as HTMLElement).style.transform = "translateY(0)"}
-              >
-                {plan.badge && <div className="plan-popular">{plan.badge}</div>}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: 24 }}>
+            {plans.map((plan) => (
+              <div key={plan.name} className="plan-card" style={{
+                padding: '44px 40px',
+                borderRadius: 28,
+                background: plan.highlight ? '#2b5de0' : '#fff',
+                border: plan.highlight ? 'none' : '1px solid #e2e8f0',
+                color: plan.highlight ? '#fff' : '#0f172a',
+                boxShadow: plan.highlight ? '0 20px 60px rgba(43,93,224,.28)' : '0 4px 20px rgba(0,0,0,.04)',
+                display: 'flex', flexDirection: 'column', position: 'relative'
+              }}>
+                {plan.highlight && (
+                  <div style={{
+                    position: 'absolute', top: -13, left: '50%', transform: 'translateX(-50%)',
+                    background: '#0f172a', color: '#fff',
+                    fontFamily: "'Outfit', sans-serif", fontSize: 10, fontWeight: 700,
+                    letterSpacing: '.14em', textTransform: 'uppercase',
+                    padding: '5px 18px', borderRadius: 100, whiteSpace: 'nowrap'
+                  }}>MAIS POPULAR</div>
+                )}
 
                 <div style={{ marginBottom: 32 }}>
                   <span style={{
-                    fontSize: 11, fontWeight: 600, letterSpacing: ".12em", textTransform: "uppercase",
-                    padding: "5px 14px", borderRadius: 100,
-                    background: plan.highlight ? "rgba(255,255,255,.12)" : "var(--blue-light)",
-                    color: plan.highlight ? "#fff" : "var(--blue)"
+                    fontSize: 10, fontWeight: 700, letterSpacing: '.14em', textTransform: 'uppercase',
+                    padding: '4px 14px', borderRadius: 100,
+                    background: plan.highlight ? 'rgba(255,255,255,.15)' : '#f1f5f9',
+                    color: plan.highlight ? '#fff' : '#64748b'
                   }}>{plan.name}</span>
 
-                  <div style={{ marginTop: 24, display: "flex", alignItems: "baseline", gap: 4 }}>
-                    <span style={{
-                      fontFamily: "'Outfit', sans-serif", fontSize: 48, fontWeight: 600,
-                      color: plan.highlight ? "#fff" : "var(--ink)"
-                    }}>{plan.price}</span>
-                    <span style={{ fontWeight: 600, fontSize: 18, color: plan.highlight ? "rgba(255,255,255,.7)" : "var(--muted)" }}>
-                      {plan.currency}
+                  <div style={{ marginTop: 22, display: 'flex', alignItems: 'baseline', gap: 4 }}>
+                    <span style={{ fontFamily: "'Outfit', sans-serif", fontSize: 48, fontWeight: 800, lineHeight: 1, color: plan.highlight ? '#fff' : '#0f172a' }}>
+                      {plan.price}
                     </span>
                   </div>
-                  <div style={{ fontSize: 13, color: plan.highlight ? "rgba(255,255,255,.6)" : "var(--muted)", fontWeight: 500, marginTop: 2 }}>
+                  <div style={{ fontSize: 13, color: plan.highlight ? 'rgba(255,255,255,.6)' : '#94a3b8', marginTop: 2, fontWeight: 500 }}>
                     {plan.period}
                   </div>
                 </div>
 
-                <ul style={{ listStyle: "none", display: "flex", flexDirection: "column", gap: 16, marginBottom: 40 }}>
+                <ul style={{ listStyle: 'none', display: 'flex', flexDirection: 'column', gap: 14, flex: 1, marginBottom: 36 }}>
                   {plan.features.map(f => (
-                    <li key={f} style={{ display: "flex", alignItems: "center", gap: 12, fontSize: 14, fontWeight: 500, color: plan.highlight ? "#fff" : "var(--ink)" }}>
+                    <li key={f} style={{ display: 'flex', alignItems: 'center', gap: 12, fontSize: 14, fontWeight: 500, color: plan.highlight ? '#fff' : '#334155' }}>
                       <div style={{
-                        width: 22, height: 22, borderRadius: "50%", flexShrink: 0,
-                        background: plan.highlight ? "rgba(255,255,255,.15)" : "var(--blue-light)",
-                        display: "flex", alignItems: "center", justifyContent: "center"
+                        width: 22, height: 22, borderRadius: '50%', flexShrink: 0,
+                        background: plan.highlight ? 'rgba(255,255,255,.18)' : '#eef2fd',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center'
                       }}>
-                        <Check size={12} color={plan.highlight ? "#fff" : "var(--blue)"} strokeWidth={3} />
+                        <Check size={12} color={plan.highlight ? '#fff' : '#2b5de0'} strokeWidth={3} />
                       </div>
                       {f}
                     </li>
@@ -817,19 +386,20 @@ export default function LandingPage() {
                   href={`https://wa.me/${whatsappNumber}?text=${encodeURIComponent(`Olá! Tenho interesse no ${plan.subject}.`)}`}
                   target="_blank" rel="noopener noreferrer"
                   style={{
-                    display: "flex", alignItems: "center", justifyContent: "center", gap: 10,
-                    padding: "16px", borderRadius: 14,
-                    fontFamily: "'Outfit', sans-serif", fontWeight: 600, fontSize: 13,
-                    letterSpacing: ".06em", textTransform: "uppercase", textDecoration: "none",
-                    background: plan.highlight ? "#fff" : "var(--ink)",
-                    color: plan.highlight ? "var(--blue)" : "#fff",
-                    transition: "opacity .2s, transform .2s"
+                    display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10,
+                    padding: '16px',
+                    background: plan.highlight ? '#fff' : '#0f172a',
+                    color: plan.highlight ? '#2b5de0' : '#fff',
+                    borderRadius: 14,
+                    fontFamily: "'Outfit', sans-serif", fontWeight: 700,
+                    fontSize: 12, letterSpacing: '.08em', textTransform: 'uppercase',
+                    textDecoration: 'none', transition: 'opacity .2s'
                   }}
-                  onMouseEnter={(e: React.MouseEvent<HTMLElement>) => { (e.currentTarget as HTMLElement).style.opacity = ".85"; e.currentTarget.style.transform = "scale(.98)"; }}
-                  onMouseLeave={(e: React.MouseEvent<HTMLElement>) => { (e.currentTarget as HTMLElement).style.opacity = "1"; e.currentTarget.style.transform = "scale(1)"; }}
+                  onMouseEnter={(e: React.MouseEvent<HTMLAnchorElement>) => (e.currentTarget as HTMLAnchorElement).style.opacity = '.85'}
+                  onMouseLeave={(e: React.MouseEvent<HTMLAnchorElement>) => (e.currentTarget as HTMLAnchorElement).style.opacity = '1'}
                 >
-                  <MessageCircle size={18} />
-                  Assinar pelo WhatsApp
+                  <MessageCircle size={16} />
+                  Assinar Agora
                 </a>
               </div>
             ))}
@@ -837,74 +407,133 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* ── CTA BANNER ────────────────────────────────────────────── */}
-      <section className="reveal" style={{ padding: "80px 40px" }}>
-        <div style={{
-          maxWidth: 1100, margin: "0 auto",
-          background: "var(--blue)", borderRadius: 32, padding: "72px 64px",
-          display: "flex", alignItems: "center", justifyContent: "space-between",
-          gap: 32, flexWrap: "wrap",
-          position: "relative", overflow: "hidden"
-        }}>
-          {/* Deco circles */}
-          <div style={{ position: "absolute", right: -60, top: -60, width: 280, height: 280, borderRadius: "50%", background: "rgba(255,255,255,.06)" }}></div>
-          <div style={{ position: "absolute", right: 60, bottom: -100, width: 200, height: 200, borderRadius: "50%", background: "rgba(255,255,255,.04)" }}></div>
+      {/* ── SABER MAIS ── */}
+      <section id="saber-mais" style={{ padding: '100px 40px', background: '#fff' }}>
+        <div style={{ maxWidth: 1100, margin: '0 auto' }}>
 
-          <div style={{ position: "relative", zIndex: 1 }}>
-            <h2 style={{ fontFamily: "'Outfit', sans-serif", fontSize: "clamp(26px,3.5vw,44px)", fontWeight: 600, color: "#fff", marginBottom: 12 }}>
-              Pronto para elevar o padrão?
+          {/* Header */}
+          <div style={{ marginBottom: 80 }}>
+            <h2 style={{
+              fontFamily: "'Outfit', sans-serif",
+              fontSize: 'clamp(32px, 5vw, 60px)',
+              fontWeight: 800, lineHeight: 1.05,
+              letterSpacing: '-.025em', textTransform: 'uppercase',
+              color: '#0f172a', marginBottom: 20
+            }}>
+              Eficiência que gera<br /><span style={{ color: '#2b5de0' }}>faturação.</span>
             </h2>
-            <p style={{ color: "rgba(255,255,255,.75)", fontSize: 16, maxWidth: 460 }}>
-              Junte-se a mais de 50 empresas angolanas que já transformaram o atendimento com o NEXT.
+            <p style={{ fontSize: 17, color: '#64748b', maxWidth: 540, lineHeight: 1.7, fontWeight: 400 }}>
+              A plataforma NEXT digitaliza o fluxo de clientes em Angola, substituindo filas físicas por uma experiência conectada.
             </p>
           </div>
 
-          <a
-            href={`https://wa.me/${whatsappNumber}?text=Olá! Quero saber mais sobre o NEXT.`}
-            target="_blank" rel="noopener noreferrer"
-            style={{
-              display: "inline-flex", alignItems: "center", gap: 12,
-              padding: "18px 36px",
-              background: "#fff", color: "var(--blue)",
-              borderRadius: 16, textDecoration: "none",
-              fontFamily: "'Outfit', sans-serif", fontWeight: 600,
-              fontSize: 14, letterSpacing: ".06em", textTransform: "uppercase",
-              transition: "transform .2s, box-shadow .2s",
-              boxShadow: "0 8px 32px rgba(0,0,0,.15)",
-              position: "relative", zIndex: 1
-            }}
-            onMouseEnter={(e: React.MouseEvent<HTMLElement>) => { (e.currentTarget as HTMLElement).style.transform = "scale(1.03)"; e.currentTarget.style.boxShadow = "0 14px 40px rgba(0,0,0,.20)"; }}
-            onMouseLeave={(e: React.MouseEvent<HTMLElement>) => { (e.currentTarget as HTMLElement).style.transform = "scale(1)"; e.currentTarget.style.boxShadow = "0 8px 32px rgba(0,0,0,.15)"; }}
-          >
-            <MessageCircle size={20} />
-            Falar Connosco
-          </a>
+          {/* Steps */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: 20, marginBottom: 100 }}>
+            {steps.map((step, idx) => (
+              <div key={idx} className="hover-lift" style={{
+                background: 'linear-gradient(135deg, #2b5de0 0%, #1e46b3 100%)',
+                padding: '40px 32px', borderRadius: 24,
+                boxShadow: '0 12px 40px rgba(43,93,224,.18)'
+              }}>
+                <div style={{
+                  width: 52, height: 52, borderRadius: 14,
+                  background: 'rgba(255,255,255,.12)',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  color: '#fff', marginBottom: 24
+                }}>{step.icon}</div>
+                <h3 style={{ fontFamily: "'Outfit', sans-serif", fontSize: 17, fontWeight: 700, color: '#fff', marginBottom: 12 }}>{step.title}</h3>
+                <p style={{ fontSize: 13, color: 'rgba(255,255,255,.75)', lineHeight: 1.65 }}>{step.desc}</p>
+              </div>
+            ))}
+          </div>
+
+          {/* Why NEXT + stat card */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: 72, alignItems: 'center' }}>
+            <div>
+              <h2 style={{ fontFamily: "'Outfit', sans-serif", fontSize: 28, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '-.01em', color: '#0f172a', marginBottom: 40 }}>
+                Porquê escolher o NEXT?
+              </h2>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 32 }}>
+                {[
+                  { icon: <Zap size={20} />, t: "Alta Performance", d: "Software otimizado para zero latência, mesmo com milhares de acessos simultâneos." },
+                  { icon: <ShieldCheck size={20} />, t: "Segurança de Dados", d: "Protocolos de encriptação que garantem a privacidade total dos seus clientes." },
+                  { icon: <Clock size={20} />, t: "Retenção de Clientes", d: "Reduza a taxa de abandono em até 40% através de uma espera confortável." }
+                ].map((item, i) => (
+                  <div key={i} className="feature-row" style={{ display: 'flex', gap: 18, alignItems: 'flex-start' }}>
+                    <div className="feature-icon" style={{
+                      width: 46, height: 46, borderRadius: 12, flexShrink: 0,
+                      background: '#eef2fd', color: '#2b5de0',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center'
+                    }}>{item.icon}</div>
+                    <div>
+                      <div style={{ fontFamily: "'Outfit', sans-serif", fontSize: 15, fontWeight: 700, color: '#0f172a', marginBottom: 4 }}>{item.t}</div>
+                      <div style={{ fontSize: 13, color: '#64748b', lineHeight: 1.65 }}>{item.d}</div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Stat card */}
+            <div style={{
+              background: '#0f172a', borderRadius: 32, padding: '52px 44px',
+              color: '#fff', position: 'relative', overflow: 'hidden',
+              border: '1px solid rgba(255,255,255,.06)'
+            }}>
+              <div style={{
+                position: 'absolute', top: -60, right: -60,
+                width: 220, height: 220, borderRadius: '50%',
+                background: 'radial-gradient(circle, rgba(43,93,224,.2) 0%, transparent 70%)',
+                pointerEvents: 'none'
+              }} />
+              <div style={{ position: 'relative', zIndex: 1 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 28 }}>
+                  <div style={{ width: 28, height: 2, background: '#2b5de0', borderRadius: 2 }} />
+                  <span style={{ fontSize: 10, letterSpacing: '.2em', textTransform: 'uppercase', color: '#3d5080', fontWeight: 700 }}>
+                    Insights de Mercado
+                  </span>
+                </div>
+                <p style={{ fontFamily: "'Outfit', sans-serif", fontSize: 26, fontWeight: 700, lineHeight: 1.35, marginBottom: 32 }}>
+                  "70% dos clientes <span style={{ color: '#2b5de0', fontStyle: 'italic' }}>abandonam</span> a loja se a fila parecer desorganizada."
+                </p>
+                <div style={{ borderTop: '1px solid rgba(255,255,255,.07)', paddingTop: 20, display: 'flex', alignItems: 'center', gap: 14 }}>
+                  <div style={{ width: 38, height: 38, borderRadius: 10, background: 'rgba(43,93,224,.12)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                    <Users size={18} color="#2b5de0" />
+                  </div>
+                  <p style={{ fontSize: 12, color: '#3d5080', lineHeight: 1.5 }}>
+                    Dados baseados em estudos de comportamento de consumo em retalho.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       </section>
 
-      {/* ── CONTACTOS ─────────────────────────────────────────────── */}
-      <section style={{ background: "var(--surface)", padding: "80px 40px", borderTop: "1px solid var(--border)" }}>
-        <div style={{ maxWidth: 1100, margin: "0 auto", display: "flex", justifyContent: "space-between", alignItems: "center", gap: 32, flexWrap: "wrap" }}>
-          <div className="reveal">
-            <h2 style={{ fontFamily: "'Outfit', sans-serif", fontSize: 36, fontWeight: 600, marginBottom: 8 }}>Fale Connosco</h2>
-            <p style={{ color: "var(--muted)", fontSize: 16 }}>Pronto para elevar o padrão do seu atendimento?</p>
+      {/* ── CONTACTOS ── */}
+      <section style={{ background: '#f8fafc', borderTop: '1px solid #e2e8f0', padding: '88px 40px' }}>
+        <div style={{ maxWidth: 1100, margin: '0 auto', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 48, flexWrap: 'wrap' }}>
+          <div>
+            <h2 style={{ fontFamily: "'Outfit', sans-serif", fontSize: 36, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '-.02em', color: '#0f172a', marginBottom: 8 }}>
+              Fale Connosco
+            </h2>
+            <p style={{ color: '#64748b', fontSize: 15, fontWeight: 500 }}>Pronto para elevar o padrão do seu atendimento?</p>
           </div>
-          <div className="reveal reveal-delay-1" style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
             {[
-              { icon: <Mail size={18} />, label: "suporte@next.ao", href: `mailto:${supportEmail}` },
-              { icon: <Instagram size={18} />, label: "@next_gestao", href: "https://www.instagram.com/dsousa.capital.ao" },
+              { icon: <Mail size={18} />, label: 'suporte@next.ao', href: `mailto:${supportEmail}` },
+              { icon: <Instagram size={18} />, label: '@next_gestao', href: 'https://www.instagram.com/dsousa.capital.ao' },
             ].map((c, i) => (
-              <a key={i} href={c.href} target="_blank" rel="noopener noreferrer" style={{
-                display: "flex", alignItems: "center", gap: 14,
-                padding: "14px 20px", background: "#fff",
-                border: "1px solid var(--border)", borderRadius: 14,
-                fontSize: 14, fontWeight: 500, color: "var(--ink)", textDecoration: "none",
-                transition: "border-color .2s, color .2s"
-              }}
-              onMouseEnter={(e: React.MouseEvent<HTMLElement>) => { (e.currentTarget as HTMLElement).style.borderColor = "var(--blue)"; e.currentTarget.style.color = "var(--blue)"; }}
-              onMouseLeave={(e: React.MouseEvent<HTMLElement>) => { (e.currentTarget as HTMLElement).style.borderColor = "var(--border)"; e.currentTarget.style.color = "var(--ink)"; }}
-              >
-                <span style={{ color: "var(--blue)" }}>{c.icon}</span>
+              <a key={i} href={c.href} target="_blank" rel="noopener noreferrer"
+                className="contact-card"
+                style={{
+                  display: 'flex', alignItems: 'center', gap: 14,
+                  padding: '14px 20px', background: '#fff',
+                  border: '1px solid #e2e8f0', borderRadius: 14,
+                  fontSize: 14, fontWeight: 500, color: '#334155',
+                  textDecoration: 'none'
+                }}>
+                <span style={{ color: '#2b5de0' }}>{c.icon}</span>
                 {c.label}
               </a>
             ))}
@@ -912,29 +541,20 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* ── FOOTER ────────────────────────────────────────────────── */}
-      <footer style={{ background: "var(--ink)", padding: "56px 40px" }}>
-        <div style={{ maxWidth: 1100, margin: "0 auto" }} className="footer-grid">
-          <div style={{ fontFamily: "'Outfit', sans-serif", fontSize: 28, fontWeight: 600, color: "#fff", letterSpacing: "-.02em" }}>
-            NEXT<span style={{ color: "var(--blue)" }}>.</span>
+      {/* ── FOOTER ── */}
+      <footer style={{ background: '#0a0e1a', padding: '56px 40px' }}>
+        <div style={{ maxWidth: 1100, margin: '0 auto', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 32, flexWrap: 'wrap' }}>
+          <div style={{ fontFamily: "'Outfit', sans-serif", fontSize: 26, fontWeight: 800, fontStyle: 'italic', letterSpacing: '-.02em', color: '#fff' }}>
+            NEXT<span style={{ color: '#2b5de0' }}>.</span>
           </div>
-
-          <div style={{ display: "flex", gap: 32, justifyContent: "center", flexWrap: "wrap" }}>
-            {[["FAQ", "/faq"], ["Cookies", "/cookies"], ["Suporte", `mailto:${supportEmail}`]].map(([l, h]) => (
-              <a key={l} href={h} style={{
-                fontFamily: "'Outfit', sans-serif", fontSize: 12, fontWeight: 600,
-                letterSpacing: ".1em", textTransform: "uppercase",
-                color: "#6B7280", textDecoration: "none", transition: "color .2s"
-              }}
-              onMouseEnter={e => (e.currentTarget as HTMLAnchorElement).style.color = "#fff"}
-              onMouseLeave={e => (e.currentTarget as HTMLAnchorElement).style.color = "#6B7280"}
-              >{l}</a>
-            ))}
+          <div style={{ display: 'flex', gap: 32 }}>
+            <Link href="/faq" className="footer-link">FAQ</Link>
+            <Link href="/cookies" className="footer-link">Cookies</Link>
+            <a href={`mailto:${supportEmail}`} className="footer-link">Suporte</a>
           </div>
-
-          <div style={{ textAlign: "right", fontSize: 11, color: "#4B5563", letterSpacing: ".08em", textTransform: "uppercase", lineHeight: 1.8 }}>
-            © 2026 NEXT · Gestão de Filas<br />
-            <span style={{ color: "#374151" }}>D'Sousa Capital · Angola</span>
+          <div style={{ fontSize: 10, color: '#334155', letterSpacing: '.1em', textTransform: 'uppercase', textAlign: 'right', lineHeight: 1.8 }}>
+            © 2026 NEXT — Gestão de Filas<br />
+            <span style={{ color: '#1e293b' }}>D'Sousa Capital · Angola</span>
           </div>
         </div>
       </footer>
