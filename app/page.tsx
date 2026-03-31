@@ -179,7 +179,7 @@ export default function LandingPage() {
             <h1 className="fade-up fade-up-1" style={{
               fontFamily: "'Outfit', sans-serif",
               fontSize: 'clamp(44px, 6vw, 76px)',
-              fontWeight: 800, lineHeight: 1.0,
+              fontWeight: 800, lineHeight: 1.1,
               letterSpacing: '-.025em', color: '#0f172a',
               textTransform: 'uppercase', marginBottom: 24
             }}>
