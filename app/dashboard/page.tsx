@@ -498,7 +498,7 @@ const markCurrentAsAttended = async () => {
 {currentTicket && (
   <button
     onClick={markCurrentAsAttended}
-    className="w-full max-w-md mt-3 py-4 rounded-2xl font-bold text-base border-2 border-emerald-500 text-emerald-600 bg-emerald-50 hover:bg-emerald-500 hover:text-white transition-all duration-300 flex items-center justify-center gap-3 shadow-sm"
+    className="mx-auto w-full max-w-md mt-3 py-4 rounded-2xl font-bold text-base border-2 border-emerald-500 text-emerald-600 bg-emerald-50 hover:bg-emerald-500 hover:text-white transition-all duration-300 flex items-center justify-center gap-3 shadow-sm"
   >
     <CheckCircle2 size={20} />
     Marcar como Atendido
@@ -507,6 +507,7 @@ const markCurrentAsAttended = async () => {
     </span>
   </button>
 )}
+
 
                 {waitingTickets.length > 0 && (
                   <p className="text-sm text-slate-600 mt-4">

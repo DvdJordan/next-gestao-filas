@@ -16,7 +16,7 @@ export default function LandingPage() {
       name: "Mensal",
       price: "5.000 Kz",
       period: "/mês",
-      features: ["Senhas Ilimitadas", "Dashboard Real-time", "Suporte Email"],
+      features: ["Senhas Ilimitadas", "Dashboard Real-time", "Relatórios Mensais", "Suporte Email"],
       subject: "Plano Mensal - NEXT"
     },
     {
@@ -184,7 +184,7 @@ export default function LandingPage() {
               textTransform: 'uppercase', marginBottom: 24
             }}>
               O TEMPO É O<br />
-              <span style={{ color: '#2b5de0' }}>ACTIVO MAIS<br />PRECIOSO.</span>
+              <span style={{ color: '#2b5de0' }}>ACTIVO MAIS<br />PRECIOSO DO SEU NEGÓCIO.</span>
             </h1>
 
             {/* Desc */}
