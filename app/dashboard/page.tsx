@@ -88,29 +88,46 @@ setStoreSlug(profile?.slug || ''); // <-- Adicione esta linha para salvar o slug
   }, [router]);
 
   async function refreshData(uid: string) {
-    if (!uid) return;
-    const { data } = await supabase
-      .from('tickets')
-      .select('*')
-      .eq('store_id', uid)
-      .order('created_at', { ascending: true });
+  if (!uid) return;
+  const { data } = await supabase
+    .from('tickets')
+    .select('*')
+    .eq('store_id', uid)
+    .order('created_at', { ascending: true });
 
-    if (data) {
-      setWaitingTickets(data.filter(t => t.status === 'waiting'));
-      const called = data.filter(t => t.status === 'called');
-      setCalledTickets(called.slice().reverse().slice(0, 5));
-      setCurrentTicket(called.length > 0 ? called[called.length - 1] : null);
-    }
+  if (data) {
+    setWaitingTickets(data.filter(t => t.status === 'waiting'));
+    const attended = data.filter(t => t.status === 'attended');
+    setCalledTickets(attended.slice().reverse().slice(0, 5));
+    const inService = data.filter(t => t.status === 'called');
+    setCurrentTicket(inService.length > 0 ? inService[inService.length - 1] : null);
   }
+}
 
   const callNext = async () => {
-    if (waitingTickets.length === 0) return;
-    const nextTicket = waitingTickets[0];
-    await supabase.from('tickets')
-      .update({ status: 'called', updated_at: new Date().toISOString() })
-      .eq('id', nextTicket.id);
-  };
+  if (waitingTickets.length === 0) return;
+  const nextTicket = waitingTickets[0];
 
+  if (currentTicket) {
+    await supabase
+      .from('tickets')
+      .update({ status: 'attended', updated_at: new Date().toISOString() })
+      .eq('id', currentTicket.id);
+  }
+
+  await supabase
+    .from('tickets')
+    .update({ status: 'called', updated_at: new Date().toISOString() })
+    .eq('id', nextTicket.id);
+};
+
+const markCurrentAsAttended = async () => {
+  if (!currentTicket) return;
+  await supabase
+    .from('tickets')
+    .update({ status: 'attended', updated_at: new Date().toISOString() })
+    .eq('id', currentTicket.id);
+};
   // ... (mantenha o código anterior igual até o saveSettings)
 
   const saveSettings = async () => {
@@ -486,21 +503,41 @@ setStoreSlug(profile?.slug || ''); // <-- Adicione esta linha para salvar o slug
                 )}
 
                 <button 
-                  onClick={callNext}
-                  disabled={waitingTickets.length === 0}
-                  className="group relative w-full max-w-md bg-gradient-to-r from-blue-600 to-indigo-700 hover:from-blue-700 hover:to-indigo-800 text-white py-6 rounded-2xl font-bold text-lg uppercase tracking-widest transition-all duration-300 shadow-xl hover:shadow-2xl disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:shadow-xl overflow-hidden"
-                >
-                  <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000"></div>
-                  <div className="relative flex items-center justify-center gap-4">
-                    <Megaphone size={24} />
-                    Chamar Próximo Cliente
-                    {waitingTickets.length > 0 && (
-                      <span className="ml-2 text-sm bg-white/20 px-3 py-1 rounded-full">
-                        {waitingTickets[0]?.ticket_number}
-                      </span>
-                    )}
-                  </div>
-                </button>
+  onClick={callNext}
+  disabled={waitingTickets.length === 0}
+  className="group relative w-full max-w-md bg-gradient-to-r from-blue-600 to-indigo-700 hover:from-blue-700 hover:to-indigo-800 text-white py-6 rounded-2xl font-bold text-lg uppercase tracking-widest transition-all duration-300 shadow-xl hover:shadow-2xl disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:shadow-xl overflow-hidden"
+>
+  <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000"></div>
+  <div className="relative flex items-center justify-center gap-4">
+    <Megaphone size={24} />
+    Chamar Próximo Cliente
+    {waitingTickets.length > 0 && (
+      <span className="ml-2 text-sm bg-white/20 px-3 py-1 rounded-full">
+        {waitingTickets[0]?.ticket_number}
+      </span>
+    )}
+  </div>
+</button>
+
+{currentTicket && (
+  <button
+    onClick={markCurrentAsAttended}
+    className="w-full max-w-md mt-3 py-4 rounded-2xl font-bold text-base border-2 border-emerald-500 text-emerald-600 bg-emerald-50 hover:bg-emerald-500 hover:text-white transition-all duration-300 flex items-center justify-center gap-3 shadow-sm"
+  >
+    <CheckCircle2 size={20} />
+    Marcar como Atendido
+    <span className="text-sm bg-emerald-100 px-3 py-1 rounded-full">
+      #{currentTicket.ticket_number}
+    </span>
+  </button>
+)}
+
+{waitingTickets.length > 0 && (
+  <p className="text-sm text-slate-600 mt-4">
+    Próximo: <span className="font-bold">{waitingTickets[0]?.customer_name}</span> • 
+    Ticket: <span className="font-bold text-blue-600">{waitingTickets[0]?.ticket_number}</span>
+  </p>
+)}
 
                 {waitingTickets.length > 0 && (
                   <p className="text-sm text-slate-600 mt-4">
