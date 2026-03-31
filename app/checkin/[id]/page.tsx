@@ -60,10 +60,11 @@ export default function CheckinPage() {
 
     try {
       const { data, error } = await supabase
-        .from('tickets')
-        .select('*')
-        .eq('store_id', targetId)
-        .order('created_at', { ascending: true });
+  .from('tickets')
+  .select('*')
+  .eq('store_id', targetId)
+  .eq('service_date', new Date().toISOString().split('T')[0])
+  .order('created_at', { ascending: true });
 
       if (error) throw error;
 
@@ -174,21 +175,24 @@ export default function CheckinPage() {
     setLoading(true);
 
     try {
-      const { data: last } = await supabase
-        .from('tickets')
-        .select('ticket_number')
-        .eq('store_id', realStoreId) // <--- TROQUE AQUI
-        .order('created_at', { ascending: false })
-        .limit(1);
+      const today = new Date().toISOString().split('T')[0];
+const { data: last } = await supabase
+  .from('tickets')
+  .select('ticket_number')
+  .eq('store_id', realStoreId)
+  .eq('service_date', today)
+  .order('created_at', { ascending: false })
+  .limit(1);
 
       const nextNumber = last && last.length > 0 ? last[0].ticket_number + 1 : 1;
 
       const { data, error } = await supabase.from('tickets').insert([{ 
-        store_id: realStoreId, // <--- TROQUE AQUI TAMBÉM
-        customer_name: customerName, 
-        ticket_number: nextNumber, 
-        status: 'waiting' 
-      }]).select().single();
+  store_id: realStoreId,
+  customer_name: customerName, 
+  ticket_number: nextNumber, 
+  status: 'waiting',
+  service_date: today
+}]).select().single();
       
       if (error) throw error;
       setTicketIssued(data);
@@ -580,7 +584,7 @@ export default function CheckinPage() {
               Sistema de Gestão de Fila • {new Date().getFullYear()}
             </p>
             <p className="text-xs text-slate-500 mt-2">
-              Aguarde sua vez com conforto
+              Uma Solução Dsousa Capital
             </p>
           </div>
         </footer>

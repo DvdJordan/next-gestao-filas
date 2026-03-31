@@ -7,7 +7,7 @@ import autoTable from 'jspdf-autotable';
 import { 
   Users, Ticket, LogOut, Megaphone, CheckCircle2, 
   BarChart3, QrCode, Loader2, Settings, X, Save,
-  ChevronRight, Clock, User, Bell, Trash2, FileText, Download
+  ChevronRight, Clock, User, Bell, FileText, Download
 } from 'lucide-react';
 
 export default function DashboardPage() {
@@ -21,7 +21,6 @@ export default function DashboardPage() {
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [newStoreName, setNewStoreName] = useState('');
   const [isSaving, setIsSaving] = useState(false);
-  const [isResetting, setIsResetting] = useState(false);
   const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
   const [copied, setCopied] = useState(false);
   const [storeSlug, setStoreSlug] = useState<string>('');
@@ -89,10 +88,13 @@ setStoreSlug(profile?.slug || ''); // <-- Adicione esta linha para salvar o slug
 
   async function refreshData(uid: string) {
   if (!uid) return;
+  const today = new Date().toISOString().split('T')[0];
+  
   const { data } = await supabase
     .from('tickets')
     .select('*')
     .eq('store_id', uid)
+    .eq('service_date', today)
     .order('created_at', { ascending: true });
 
   if (data) {
@@ -163,32 +165,6 @@ const markCurrentAsAttended = async () => {
     setIsSaving(false);
   };
 
-  // --- FUNÇÃO QUE ESTAVA FALTANDO ---
-  const handleResetDay = async () => {
-    if (!confirm("⚠️ ATENÇÃO: Isso apagará TODOS os tickets de hoje.\n\nTem certeza?")) return;
-
-    setIsResetting(true);
-    try {
-      const { error } = await supabase
-        .from('tickets')
-        .delete()
-        .eq('store_id', storeId);
-
-      if (error) throw error;
-
-      setWaitingTickets([]);
-      setCalledTickets([]);
-      setCurrentTicket(null);
-      setIsSettingsOpen(false);
-      alert("Fila resetada para um novo dia!");
-    } catch (error: any) {
-      alert("Erro ao resetar: " + error.message);
-    } finally {
-      setIsResetting(false);
-    }
-  };
-  // --------------------------------
-
   const generateReport = async (type: 'weekly' | 'monthly') => {
 // ... (segue o restante do código)
     setIsGeneratingPdf(true);
@@ -228,7 +204,7 @@ const markCurrentAsAttended = async () => {
       const tableData = tickets.map(t => [
         t.ticket_number,
         t.customer_name,
-        t.status === 'called' ? 'Atendido' : 'Na Fila',
+        t.status === 'attended' ? 'Atendido' : t.status === 'called' ? 'No Guichê' : 'Na Fila',
         new Date(t.created_at).toLocaleString('pt-BR')
       ]);
 
@@ -532,13 +508,6 @@ const markCurrentAsAttended = async () => {
   </button>
 )}
 
-{waitingTickets.length > 0 && (
-  <p className="text-sm text-slate-600 mt-4">
-    Próximo: <span className="font-bold">{waitingTickets[0]?.customer_name}</span> • 
-    Ticket: <span className="font-bold text-blue-600">{waitingTickets[0]?.ticket_number}</span>
-  </p>
-)}
-
                 {waitingTickets.length > 0 && (
                   <p className="text-sm text-slate-600 mt-4">
                     Próximo: <span className="font-bold">{waitingTickets[0]?.customer_name}</span> • 
@@ -702,23 +671,6 @@ const markCurrentAsAttended = async () => {
                     >
                       <Download size={20} className="mb-2" />
                       <span className="text-xs font-bold">Relatório Mensal</span>
-                    </button>
-                  </div>
-
-                  <div className="bg-red-50 rounded-2xl p-4 border border-red-100">
-                    <h4 className="text-red-800 text-sm font-bold mb-2 flex items-center gap-2">
-                      <Trash2 size={16} />
-                      Zona de Perigo
-                    </h4>
-                    <p className="text-xs text-red-600 mb-3">
-                      Apagar todos os tickets e reiniciar a contagem para um novo dia.
-                    </p>
-                    <button 
-                      onClick={handleResetDay}
-                      disabled={isResetting}
-                      className="w-full py-3 bg-white border border-red-200 text-red-600 rounded-xl text-xs font-bold hover:bg-red-600 hover:text-white transition-all shadow-sm"
-                    >
-                      {isResetting ? "Limpando..." : "Resetar Novo Dia"}
                     </button>
                   </div>
                 </div>
