@@ -1,15 +1,50 @@
 "use client";
 
-import React from 'react';
+import React, { useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import Link from 'next/link';
 import {
   Rocket, ShieldCheck, Clock, MessageCircle, BarChart3,
-  Users, Zap, Check, Smartphone, Bell, Mail, Instagram
+  Users, Zap, Check, Smartphone, X, Hospital, Landmark, Scissors, Building2, Briefcase, Bell, Mail, Instagram
 } from 'lucide-react';
 
 export default function LandingPage() {
   const whatsappNumber = "244956821719";
   const supportEmail = "dsousa.capital.ao+next@gmail.com";
+  const [isIdealOpen, setIsIdealOpen] = useState(false);
+
+  const [activePsyCard, setActivePsyCard] = useState<number | null>(null);
+
+  const psychologyData = [
+    {
+      id: 1,
+      title: "Filas Injustas",
+      subtitle: "A perceção de justiça é fundamental",
+      content: "O sistema de fila única digital elimina a frustração de pessoas furando a fila. O fluxo torna-se 100% transparente e justo, reduzindo a irritação a zero.",
+      img: "https://images.unsplash.com/photo-1556742049-0cfed4f6a45d?auto=format&fit=crop&q=80&w=800" // Cliente sorrindo na loja
+    },
+    {
+      id: 2,
+      title: "Ansiedade na Espera",
+      subtitle: "A espera sem informação parece mais lenta",
+      content: "Fornecer atualizações ao vivo e a posição exata no telemóvel reduz drasticamente a ansiedade do cliente, tornando o tempo de espera confortável e previsível.",
+      img: "https://images.unsplash.com/photo-1512428559087-560fa5ceab42?auto=format&fit=crop&q=80&w=800" // Pessoa feliz ao telemóvel
+    },
+    {
+      id: 3,
+      title: "O Custo do Abandono",
+      subtitle: "Filas visíveis afastam compradores",
+      content: "Até 70% dos clientes abandonam filas longas. Eliminar a fila física com check-in digital converte potenciais desistências em vendas reais e aumenta o ticket médio.",
+      img: "https://images.unsplash.com/photo-1601933973783-43cf8a7d4c5f?auto=format&fit=crop&q=80&w=800" // Compras relaxadas
+    },
+    {
+      id: 4,
+      title: "Liberdade Total",
+      subtitle: "O fim de estar preso na porta da loja",
+      content: "O seu cliente não precisa de ficar plantado à espera. Ele pode entrar na fila enquanto ainda está em casa, no trabalho ou a tratar de outras coisas na rua. O NEXT avisa no telemóvel quando a vez dele estiver a chegar, para ele vir apenas no momento certo. É prático, moderno e sem stress.",
+      img: "https://images.unsplash.com/photo-1523206489230-c012c64b2b48?auto=format&fit=crop&q=80&w=800" 
+    }
+  ];
 
   const plans = [
     {
@@ -295,6 +330,78 @@ export default function LandingPage() {
         </div>
       </section>
 
+      {/* ── PSICOLOGIA DA FILA (FRAMER MOTION) ── */}
+      <section style={{ padding: '100px 40px', background: '#f8fafc', borderTop: '1px solid #e2e8f0' }}>
+        <div style={{ maxWidth: 1100, margin: '0 auto' }}>
+          
+          <div style={{ textAlign: 'center', marginBottom: 64 }}>
+            <h2 style={{ fontFamily: "'Outfit', sans-serif", fontSize: 'clamp(32px, 4vw, 48px)', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '-.02em', color: '#0f172a' }}>
+              A Psicologia da <span style={{ color: '#2b5de0' }}>Espera</span>
+            </h2>
+            <p style={{ fontSize: 16, color: '#64748b', fontWeight: 500, marginTop: 12 }}>
+              Descubra porque as filas físicas prejudicam o seu negócio e como o digital resolve.
+            </p>
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: 24 }}>
+            {psychologyData.map((item) => (
+              <motion.div
+                key={item.id}
+                layout
+                onClick={() => setActivePsyCard(activePsyCard === item.id ? null : item.id)}
+                style={{
+                  borderRadius: 24,
+                  overflow: 'hidden',
+                  background: '#fff',
+                  border: '1px solid #e2e8f0',
+                  boxShadow: activePsyCard === item.id ? '0 20px 40px rgba(43,93,224,.15)' : '0 4px 12px rgba(0,0,0,.05)',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  flexDirection: 'column'
+                }}
+                whileHover={{ y: -6 }}
+                transition={{ duration: 0.3, ease: "easeInOut" }}
+              >
+                {/* Imagem */}
+                <motion.div layout style={{ height: activePsyCard === item.id ? 140 : 220, position: 'relative', overflow: 'hidden' }}>
+                  <img src={item.img} alt={item.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                  <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, rgba(15,23,42,0.85), transparent)' }} />
+                  <div style={{ position: 'absolute', bottom: 16, left: 20, right: 20 }}>
+                    <h3 style={{ fontFamily: "'Outfit', sans-serif", color: '#fff', fontSize: 20, fontWeight: 700, letterSpacing: '-.01em' }}>
+                      {item.title}
+                    </h3>
+                  </div>
+                </motion.div>
+
+                {/* Textos: Subtítulo fixo e Descrição expansível */}
+                <motion.div layout style={{ padding: '24px 20px' }}>
+                  <p style={{ fontSize: 12, fontWeight: 800, color: '#2b5de0', textTransform: 'uppercase', letterSpacing: '.08em' }}>
+                    {item.subtitle}
+                  </p>
+                  
+                  <AnimatePresence>
+                    {activePsyCard === item.id && (
+                      <motion.div
+                        initial={{ opacity: 0, height: 0, marginTop: 0 }}
+                        animate={{ opacity: 1, height: 'auto', marginTop: 16 }}
+                        exit={{ opacity: 0, height: 0, marginTop: 0 }}
+                        transition={{ duration: 0.3 }}
+                        style={{ overflow: 'hidden' }}
+                      >
+                        <p style={{ fontSize: 14, color: '#64748b', lineHeight: 1.6, fontWeight: 500 }}>
+                          {item.content}
+                        </p>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </motion.div>
+              </motion.div>
+            ))}
+          </div>
+          
+        </div>
+      </section>
+
       {/* ── SOCIAL PROOF ── */}
       <section style={{ padding: '100px 40px', maxWidth: 1100, margin: '0 auto' }}>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 48, textAlign: 'center' }}>
@@ -558,6 +665,129 @@ export default function LandingPage() {
           </div>
         </div>
       </footer>
+
+      {/* Botão Fixo na Lateral Direita */}
+<motion.button
+  onClick={() => setIsIdealOpen(true)}
+  style={{
+    position: 'fixed',
+    right: 0,
+    top: '40%',
+    backgroundColor: '#0070f3',
+    color: 'white',
+    padding: '15px 10px',
+    borderTopLeftRadius: '12px',
+    borderBottomLeftRadius: '12px',
+    writingMode: 'vertical-rl',
+    textOrientation: 'mixed',
+    fontWeight: 'bold',
+    zIndex: 100,
+    cursor: 'pointer',
+    boxShadow: '0 4px 15px rgba(0,0,0,0.2)'
+  }}
+  whileHover={{ scale: 1.05, x: -5 }}
+>
+  IDEAL PARA...
+</motion.button>
+
+<AnimatePresence>
+  {isIdealOpen && (
+    <>
+      {/* Overlay Escuro (Fundo) */}
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        onClick={() => setIsIdealOpen(false)}
+        style={{
+          position: 'fixed',
+          inset: 0,
+          backgroundColor: 'rgba(0,0,0,0.3)',
+          backdropFilter: 'blur(4px)',
+          zIndex: 101
+        }}
+      />
+
+      {/* Painel Lateral */}
+      <motion.div
+        initial={{ x: '100%' }}
+        animate={{ x: 0 }}
+        exit={{ x: '100%' }}
+        transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+        style={{
+          position: 'fixed',
+          right: 0,
+          top: 0,
+          bottom: 0,
+          width: '100%',
+          maxWidth: '400px',
+          backgroundColor: 'rgba(255, 255, 255, 0.95)',
+          boxShadow: '-10px 0 30px rgba(0,0,0,0.1)',
+          zIndex: 102,
+          padding: '40px 30px',
+          overflowY: 'auto'
+        }}
+      >
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '40px' }}>
+          <h2 style={{ fontSize: '24px', fontWeight: 'bold', color: '#1e293b' }}>Ideal Para...</h2>
+          <button onClick={() => setIsIdealOpen(false)} style={{ cursor: 'pointer', border: 'none', background: 'none' }}>
+            <X size={24} color="#64748b" />
+          </button>
+        </div>
+
+        <div style={{ display: 'grid', gap: '20px' }}>
+          {[
+            { icon: <Hospital color="#ef4444" />, title: "Clínicas & Saúde", desc: "Gestão de pacientes e triagem médica." },
+            { icon: <Landmark color="#3b82f6" />, title: "Agentes Bancários", desc: "Controle de fluxo financeiro e depósitos." },
+            { icon: <Users color="#10b981" />, title: "Atendimento Público", desc: "Serviços administrativos e repartições." },
+            { icon: <Scissors color="#f59e0b" />, title: "Barbearias & Salões", desc: "Evite aglomerações na recepção." },
+            { icon: <Building2 color="#6366f1" />, title: "Setor Privado", desc: "Empresas com alto fluxo de clientes." },
+            { icon: <Briefcase color="#475569" />, title: "Serviços em Geral", desc: "Qualquer negócio que valorize o tempo." }
+          ].map((item, idx) => (
+            <motion.div
+              key={idx}
+              whileHover={{ x: -5 }}
+              style={{
+                display: 'flex',
+                gap: '15px',
+                padding: '15px',
+                borderRadius: '12px',
+                backgroundColor: '#f8fafc',
+                border: '1px solid #e2e8f0'
+              }}
+            >
+              <div style={{ backgroundColor: '#fff', padding: '10px', borderRadius: '10px', boxShadow: '0 2px 5px rgba(0,0,0,0.05)' }}>
+                {item.icon}
+              </div>
+              <div>
+                <h4 style={{ margin: 0, fontSize: '16px', fontWeight: 'bold', color: '#1e293b' }}>{item.title}</h4>
+                <p style={{ margin: 0, fontSize: '13px', color: '#64748b' }}>{item.desc}</p>
+              </div>
+            </motion.div>
+          ))}
+        </div>
+
+        <button 
+          onClick={() => setIsIdealOpen(false)}
+          style={{
+            marginTop: '40px',
+            width: '100%',
+            padding: '15px',
+            backgroundColor: '#0070f3',
+            color: '#fff',
+            border: 'none',
+            borderRadius: '10px',
+            fontWeight: 'bold',
+            cursor: 'pointer'
+          }}
+        >
+          Entendi
+        </button>
+      </motion.div>
+    </>
+  )}
+</AnimatePresence>
+
     </div>
   );
 }
